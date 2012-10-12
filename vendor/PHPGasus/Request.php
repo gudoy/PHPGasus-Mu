@@ -14,6 +14,7 @@ Class Request extends Core
 		$this->getParams();
 		$this->getExtension();
 		$this->getController();
+		$this->getCurrentURL();
 
 //var_dump($this);
 
@@ -41,7 +42,8 @@ Class Request extends Core
 		$lastKey 				= count($p)-1;
 		$last 					= end($p);
 		$dotPos 				= strpos($last, '.');
-		$this->extension 		= !empty($p) && $dotPos !== false ? substr($last, $dotPos) : null; 
+		$this->extension 		= !empty($p) && $dotPos !== false ? substr($last, $dotPos) : null;
+		$this->outputFormat 	= _DEFAULT_OUTPUT_FORMAT; 
 		
 		// Do not continue any longer if the last param does not contains extension
 		if ( $dotPos === false ) { return; }
@@ -67,6 +69,21 @@ Class Request extends Core
 		}
 		
 		// TODO: support for folders
+	}
+	
+	public function getCurrentURL()
+	{
+		if ( isset($this->url) ){ return $this->url(); }
+
+    	$protocol 		= _APP_PROTOCOL;
+		$host 			= $_SERVER['SERVER_NAME'];
+		$tmp 			= parse_url($protocol . $host . $_SERVER['REQUEST_URI']);
+		$tmp['query'] 	= isset($tmp['query']) ? urlencode(urldecode($tmp['query'])) : '';
+		$path 			= join('', $tmp);
+
+		$this->url = $protocol . $host . $_SERVER['REQUEST_URI'];
+		
+		return $this->url;
 	}
 }
 
