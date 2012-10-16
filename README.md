@@ -10,7 +10,7 @@ PHPGasus\Response
 
 INSTALLATION
 -------------
-1) Add the following rules to your vhost or in a .htaccess file at the root of your project folder 
+1) Add the following rules to your vhost or in a .htaccess file in the root of your project folder 
 ```
 # Active rewrite rules engine
 RewriteEngine on
@@ -23,7 +23,7 @@ RewriteEngine on
 RewriteRule ^((?!index|public|favicon\.ico).*) index.php/$1/%{QUERY_STRING}	[L]
 ```
 
-2) Extract the files in the root your project folder
+2) Extract the files in the root of your project folder
 
 
 USAGE
