@@ -18,10 +18,9 @@ Class Request extends Core
 		$this->getMethod();
 		$this->getParams();
 
-//var_dump($this);
-
 		// Allways call dispatchMethod (that will redispatch to proper method)	
-		return call_user_func_array(array(new $this->controllerName($this), 'dispatchMethod'), $this->filters);	
+		//return call_user_func_array(array(new $this->controllerName($this), 'dispatchMethod'), $this->filters);
+		return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
 	}
 
 	public function getCurrentURL()
@@ -41,12 +40,12 @@ Class Request extends Core
 
 	public function getFilters()
 	{
-		$this->filters = array();
+		//$this->filters = array();
 		
 		// TODO: bench preg_split + replaced request uri, preg_split + redirect_url, explode + skiping '/' in dispatch
 		//$parts 		= preg_split('/\//', trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $_SERVER['REQUEST_URI']), '/'));
-		$this->filters 	= preg_split('/\//', trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $this->relativeURI), '/'));
-		//$parts = preg_split('/\//', trim($_SERVER['REDIRECT_URL'], '/'));
+		$cleaned 	= trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $this->relativeURI), '/');
+		$this->filters = !empty($cleaned) ? preg_split('/\//', $cleaned) : array();
 
 //var_dump($this->filters);
 	}
@@ -57,9 +56,12 @@ Class Request extends Core
 		$this->controllerName 	= 'CIndex';
 		
 		// Controllers/$controler exists?
-		if ( isset($p[0]) && ( $isFile = file_exists(_PATH_CONTROLLERS . 'C' . ucfirst($p[0]) . '.php') ) && $isFile )
+		//if ( isset($p[0]) && ( $isFile = file_exists(_PATH_CONTROLLERS . 'C' . ucfirst($p[0]) . '.php') ) && $isFile )
+		//if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile )
+		if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile && class_exists($cName) )
 		{
-			$this->controllerName = 'C' . ucfirst($p[0]);
+			//$this->controllerName = 'C' . ucfirst($p[0]);
+			$this->controllerName = $cName;
 			array_shift($p);
 			$this->filters = $p;
 		}
@@ -70,7 +72,28 @@ Class Request extends Core
 	
 	public function getMethod()
 	{
+//var_dump(__METHOD__);
 		
+//var_dump($this);
+		
+		//$params = func_get_args(); 
+		$params = &$this->filters;
+		$method = 'index';
+		
+		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerName, 'create') )
+		{
+			$method = 'create';
+			array_shift($params);
+		}
+		else if	( isset($params[0]) && method_exists($this->controllerName, $params[0]) && $params[0][0] !== '_' )
+		{
+			$method = $params[0];
+			array_shift($params);			
+		}
+
+		$this->methodName = $method;
+
+//var_dump($this);
 	}
 
 	public function getExtension()
@@ -95,7 +118,8 @@ Class Request extends Core
 		$this->outputFormat 	= $info['extension'];
 		
 		// Try to find modifiers to apply to output format 
-		$cleaned 				= trim(str_replace($this->outputFormat, '', $this->extension), '.');
+		//$cleaned 				= trim(str_replace($this->outputFormat, '', $this->extension), '.');
+		$cleaned 				= trim(preg_replace('/' . $this->outputFormat . '$/', '', $this->extension), '.');
 		$this->outputModifiers 	= empty($cleaned) ? array() : explode('.', $cleaned);
 	}
 	

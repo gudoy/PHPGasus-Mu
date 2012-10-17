@@ -142,8 +142,9 @@ Class Response extends Core
 	
 	public function renderHtml()
 	{
-		$this->setHeader('Content-Type', 'text/html');
+		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
 		
+		// TODO: use default template (using conf)???
 		// Has the template been defined
 		if ( !empty($this->template) && file_exists($this->template) )
 		{
@@ -157,15 +158,47 @@ Class Response extends Core
 		
 		$this->currentFormat = 'html';
 	}
+	public function renderXhtml()
+	{
+		$this->setHeader('Content-Type', 'application/xhtml+xml; charset=utf-8;');
+		$this->renderHtml();
+		$this->currentFormat = 'html';
+	}
+	
+	
 	public function renderJson()
 	{
-		$this->setHeader('Content-Type', 'application/json');
+		$this->setHeader('Content-Type', 'application/json; charset=utf-8;');
 		$this->body = json_encode(isset($this->body) ? $this->body : $this->data);
 		$this->currentFormat = 'json';
 	}
+	
+	public function renderJsonp()
+	{
+		$this->setHeader('Content-Type', 'application/json; charset=utf-8;');
+		
+		$callback = !empty($_GET['callback']) ? filter_var($_GET['callback'], FILTER_SANITIZE_STRING) : null;
+		$callback = !empty($callback) ? $callback : 'callback';
+		
+		$this->renderJson();
+		$this->body = $callback . '(' . $this->body . ')';
+		$this->currentFormat = 'jsonp';
+	}
+
+	public function renderJsonreport()
+	{
+		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
+		
+		$this->renderJson();
+		$this->body = '<div id="json" class="jsonreport">' . $this->body . '</div>';
+		$this->body .= '<script type="text/javascript" src="' . _URL . 'public/js/libs/jsonreport.js' . '"></script>';
+		$this->body .= '<script type="text/javascript">window.onload = function(){ var json = document.getElementById("json"); json.innerHTML = _.jsonreport(document.getElementById("json").innerHTML) };</script>';
+		$this->currentFormat = 'jsonp';
+	}
+	
 	public function renderDataurl()
 	{
-		$this->setHeader('Content-Type', 'plain/text');
+		$this->setHeader('Content-Type', 'plain/text; charset=utf-8;');
 
 		$data = isset($this->body) ? $this->body : $this->data;
 		

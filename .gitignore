@@ -1,3 +1,4 @@
 /.project
-docs
 .DS_Store
+docs
+tests
