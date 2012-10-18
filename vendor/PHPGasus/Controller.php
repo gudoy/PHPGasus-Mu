@@ -22,6 +22,8 @@ Class Controller extends Core
 		//$this->response = new Response($this);
 	}
 	
+	// deprecated: moved to Request class
+	// TODO: remove
 	public function dispatchMethod()
 	{
 		$params = func_get_args(); 
