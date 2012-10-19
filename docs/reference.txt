@@ -1,0 +1,107 @@
+Application
+	- init(): 
+
+Request
+	- url: (string) requested url
+	- relativeURI: 
+	- controllerName: resolved crontroller name
+	- outputFormat: format in which the response should be returned (default = html) 
+	- extension: 
+	- filters:
+	- params
+		- get: TODO: sanitize/validate $_GET params????
+		- post: TODO: sanitize/validate $_GET params????
+		
+	- getCurrentURL():
+	- getFilters():
+	- getExtension():
+	- getController(): tries to get the controller to dispatch the request to
+	- getMethod(): tries to get the method to dispatch the request to
+	- getFilters(): tries to get
+	- getParams(): 
+	
+Response
+	- httpVersion:
+	- statusCode:
+	- statusCodes:
+	- knownFormats:
+	- headers:
+	- body:
+	- data:
+	- setSatusCode():
+	- setHeaders():
+	- setHeader():
+	- writeHeader():
+	- render + $format():
+	- render()
+
+Controller
+	- __construct(Request)
+	- render(): shortcut method to Response->render()
+
+Model
+	- __construct(Controller)
+	- connect(): opens a connection
+	- pconnect(): opens a persistent connection
+	
+	- close($connexion): close the connection
+
+	- getCollections(): alias of getResources()????
+	- getTables(): alias of getResources()????
+	- getResources(): list all available resources
+	
+	- getColumns($resource)
+	
+	- createCollection();
+	- createTable();
+	- createResource();
+	
+	- get()
+	- find()
+	- getOne()
+	- findOne()
+	- retrieve()
+	- search()
+	
+	- create()
+	- delete()
+	- update()
+	- upsert()
+	
+	
+SqlModel
+	- affectedRows:
+	- numRows:
+	- numFields:
+	- insertedId:
+
+	- setEncoding():
+	- escapeString():
+	- query():
+	
+	- buildQuery():
+	- buildSelect():
+	- buildInsert():
+	- buildUpdate():
+	- buildDelete():
+	
+	- buildFrom();
+	- buildColumnsList():
+	- buildLeftJoins():
+	- buildRightJoins():
+	- buildCrossJoins():
+	- buildWhere():
+	- buildConditions():
+	- buildGroupBy():
+	- buildOrderBy():
+	- buildLimit():
+	- buildOffset():
+	
+	
+DataModel
+	- resources:
+	- columns:
+	- groups:
+
+	- validate($value, $options)
+	- sanitize($value, $options)

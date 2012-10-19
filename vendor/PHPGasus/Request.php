@@ -15,12 +15,19 @@ Class Request extends Core
 		$this->getFilters();
 		$this->getExtension();
 		$this->getController();
-		$this->getMethod();
-		$this->getParams();
-
+		
 		// Allways call dispatchMethod (that will redispatch to proper method)	
 		//return call_user_func_array(array(new $this->controllerName($this), 'dispatchMethod'), $this->filters);
+		
+		$cName = 'PHPGasus\\controllers\\' . join('\\', $this->breadcrumbs) . str_replace('//', '\\', $this->controllerRelPath) . $this->controllerName;
+		
+//var_dump($cName);
+		
+		$this->getMethod();
+		$this->getParams();
+		
 		return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
+		//return call_user_func_array(array(new $cName($this), $this->methodName), $this->filters);
 	}
 
 	public function getCurrentURL()
@@ -52,12 +59,16 @@ Class Request extends Core
 	
 	public function getController()
 	{
-		$p 						= $this->filters;
-		$this->controllerName 	= 'CIndex';
+		$p 							= $this->filters;
+		$this->controllerName 		= 'CIndex';
+		$this->controllerRelPath 	= '';
+		$this->breadcrumbs 			= array();
 		
 		// Controllers/$controler exists?
 		//if ( isset($p[0]) && ( $isFile = file_exists(_PATH_CONTROLLERS . 'C' . ucfirst($p[0]) . '.php') ) && $isFile )
 		//if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile )
+		
+		
 		if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile && class_exists($cName) )
 		{
 			//$this->controllerName = 'C' . ucfirst($p[0]);
@@ -68,6 +79,64 @@ Class Request extends Core
 		
 		// TODO: support for folders
 
+	}
+	
+	public function getController0()
+	{
+		$this->controllerName 		= 'CIndex';
+		$this->controllerRelPath 	= '';
+		$this->breadcrumbs 			= array();
+		
+		// If the site is in maintenance
+		if ( _IN_MAINTENANCE ) {  return; }
+
+		// Special case for Home (propably the most visited page)
+		// We can optmitize by directly calling the controller
+		elseif ( str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REDIRECT_URL']) === '/' ) { return; }
+
+		// Otherwise,
+		// Loop over the request parts
+		$i = -1;
+		foreach ((array) $this->filters as $item)
+		{
+			$i++;	
+			$item 		= strtolower($item); 													// Lowercase the item
+			$hasNext 	= isset($this->filters[$i+1]); 											// Check if there's a next part to check against
+			$cName 		= 'C' . ucfirst($item); 												// Controller name
+			$cPath 		= _PATH_CONTROLLERS . join('/', $this->breadcrumbs); 					// Current path to controller
+			$cFilepath 	= $cPath . $cName . '.php'; 											// Controller file path	
+
+//var_dump($item);
+						
+			// Is an existing folder in controllers?
+			if ( ( $isDir = is_dir($cPath . $item) ) && $isDir )
+			{
+//var_dump('isfolder:' . $isDir);
+//var_dump($cPath);
+//var_dump($cPath . $item . '/' . $cName . '.php');
+
+				if ( ( $isFile = file_exists($cPath . $item . '/' . $cName . '.php') ) && $isFile )
+				{
+//var_dump('is file in folder:' . $isFile);
+					$this->controllerName = $cName;
+					$this->controllerRelPath .= $item . '/';
+				}
+		
+				// Is there a next item?
+				//if ( $hasNext ){ $Request->breadcrumbs[] = $item; continue; }
+				if ( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
+			}
+			// Is an existing controller?
+			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $RC->name = 'C' . ucfirst($item); }
+			
+			// Get method & params to dispatch
+			//$RC->rawName 	= strtolower(substr($RC->name, 1));
+			
+			// Allways call dispatchMethod (that will redispatch to proper method)	
+			//return call_user_func(array(new $RC->name($Request), 'dispatchMethod'));
+		}
+
+		//require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');	
 	}
 	
 	public function getMethod()

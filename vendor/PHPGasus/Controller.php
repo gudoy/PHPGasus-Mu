@@ -8,36 +8,22 @@ Class Controller extends Core
 	
 	public function __construct(Request $Request)
 	{
+		parent::__construct();
+		
+		//$this->response = new Response($this);
+		
 		$this->request 	= $Request;
 		$this->response = new Response();
 		$this->response->request = &$this->request;
-		
-		parent::__construct();
 		
 		$this->init();
 	}
 	
 	public function init()
 	{
-		//$this->response = new Response($this);
-	}
-	
-	// deprecated: moved to Request class
-	// TODO: remove
-	public function dispatchMethod()
-	{
-		$params = func_get_args(); 
-		$method = 'index';
+		if ( !empty($this->inited) ){ return; }
 		
-		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this, 'create') )
-		{
-			$method = 'create';
-			array_shift($params);
-		}
-
-		// TODO: test if method exists
-			
-		return call_user_func_array(array($this, $method), $params);
+		//$this->inited = true;
 	}
 	
 	public function render()

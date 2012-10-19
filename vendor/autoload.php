@@ -7,6 +7,8 @@ function __autoload($className)
     $fileName  = '';
     $namespace = '';
 	
+//var_dump($className);
+	
 //var_dump($lastNsPos = strripos($className, '\\'));
 	
     if ( $lastNsPos = strripos($className, '\\') )
@@ -19,6 +21,8 @@ function __autoload($className)
 	// PHPGasus specific
 	else
 	{
+//var_dump('PHPGasus specific');
+		
 		$first 		= $className[0]; 														// Get first letter
 		$is2ndUp 	= $className[1] === strtoupper($className[1]); 							// Check if second is uppercased
 				
@@ -27,7 +31,8 @@ function __autoload($className)
 			$known 		= array('C' =>'controller'); 										// Known classes types
 			$type 		= isset($known[$first]) && $is2ndUp ? $known[$first] : 'lib'; 		// Set class type
 			$path 		= constant('_PATH_' . strtoupper($type  . 's')); 					// Get class type base path
-			//$fileName 	= $path . $className . '.php'; 									// Get class filepath	
+			//$fileName 	= $path . $className . '.php'; 									// Get class filepath
+			//$classname 	= substr($className, strripos($className, '\\') + 1);
 			$fileName 	= $path; 															// Get class filepath
 		}
 	}

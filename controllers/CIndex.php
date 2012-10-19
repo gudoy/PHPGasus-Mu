@@ -9,6 +9,24 @@ Class CIndex extends PHPGasus\Controller
 		
 		$this->render();
 	}
+	
+	public function maintenance()
+	{
+		$this->render();
+	}
+ 
+ 
+	public function down()
+	{
+		$this->render();
+	}
+	
+	public function notfound()
+	{
+var_dump(__METHOD__);
+		
+		$this->render();
+	}
 }
 
 

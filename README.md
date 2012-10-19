@@ -28,3 +28,11 @@ RewriteRule ^((?!index|public|favicon\.ico).*) index.php/$1/%{QUERY_STRING}	[L]
 
 USAGE
 -----------------
+
+
+
+
+
+LICENSE
+-----------------
+MIT license
