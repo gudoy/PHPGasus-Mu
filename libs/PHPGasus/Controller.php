@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPGasus;
+//namespace PHPGasus;
 
 Class Controller extends Core
 {
@@ -27,7 +27,7 @@ Class Controller extends Core
 	}
 	
 	public function render()
-	{
+	{		
 		$_req 	= &$this->request;
 		$_resp 	= &$this->response;
 		
@@ -43,16 +43,16 @@ Class Controller extends Core
 			if ( isset($_resp->body) && $_resp->currentFormat === $format ){ continue; }
 			
 			// Skip unknown response formats
-			if ( !isset($_resp->knownFormats[$format]) || !method_exists($_resp, 'render' . ucfirst($format)) );
+			if ( !isset($_resp->knownFormats[$format]) || !method_exists($_resp, 'render' . ucfirst($format)) ){ continue; }
 			
 			// Otherwise, call the proper rendering method
 			$_resp->{'render' . ucfirst($format)}();
 		}
 		
 		// Call the final rendering method
-		$_resp->{'render' . ucfirst($of)}();
-		
-		echo $_resp->body;
+		$finalMthd ='render' . ucfirst(isset($_resp->knownFormats[$of]) ? $of : _DEFAULT_OUTPUT_FORMAT);
+		$_resp->$finalMthd();
+		$_resp->render();
 	}	
 }
 

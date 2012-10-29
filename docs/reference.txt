@@ -29,9 +29,10 @@ Response
 	- body:
 	- data:
 	- setSatusCode():
-	- setHeaders():
-	- setHeader():
-	- writeHeader():
+	- setHeader($name, $value)
+	- setHeaders($assoc):
+	- setFileBasename():
+	- writeHeaders():
 	- render + $format():
 	- render()
 

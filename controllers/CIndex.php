@@ -1,6 +1,11 @@
 <?php
 
-Class CIndex extends PHPGasus\Controller 
+//namespace PHPGasus;
+//namespace PHPGasus\Controllers;
+//use PHPGasus;
+
+Class CIndex extends Controller
+//Class CIndex extends \PHPGasus\Controller 
 {	
 	public function index()
 	{
@@ -12,6 +17,8 @@ Class CIndex extends PHPGasus\Controller
 	
 	public function maintenance()
 	{
+var_dump(__METHOD__);
+		
 		$this->render();
 	}
  

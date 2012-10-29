@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPGasus;
+//namespace PHPGasus;
 
 Class Model extends Core
 {

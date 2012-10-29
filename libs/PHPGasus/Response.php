@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPGasus;
+//namespace PHPGasus;
 
 Class Response extends Core
 {
@@ -84,6 +84,9 @@ Class Response extends Core
 		//'yamltxt' 		=> array('mime' => 'text/plain'), 			// use '.yaml.txt' instead
 		'qr' 			=> array('mime' => 'image/png'),
 		'dataurl' 		=> array('mime' => 'text/plain'),
+		'download' 		=> array('mime' => 'application/force-download')
+		//'download' 		=> array('application/octet-stream')
+		//'download' 		=> array('application/x-msdownload') 		// for exe/dll ????
 		// TODO
 		//'php' 			=> array('mime' => 'vnd.php.serialized'),
 		//'phptxt' 			=> array('mime' => 'text/plain'),
@@ -102,6 +105,9 @@ Class Response extends Core
 	//public function __construct(Request $Request)
 	public function __construct()
 	{
+		// TODO: pass the Request in the constructor or let the user assign (or not) it to a $request member?
+		// IT would be better not having to rely on it's presence 
+		
 		//$this->request = &$Request;
 		$this->currentFormat = null;
 	}
@@ -127,15 +133,51 @@ Class Response extends Core
 	
 	public function setHeader($name, $value)
 	{
-		$this->headers[] = $name . ': ' . $value;
+		// Handle keys to be passed with or without ': ' at the end
+		//$this->headers[] = $name . ': ' . $value;
+		//$this->headers[] = trim(trim($name), ':') . ': ' . $value;
+		$cleaned 					= trim(trim($name), ':');
+		$this->headers[$cleaned] 	= $value;
+		
+		return $this;
+	}
+
+	public function setHeaders($headers = array())
+	{
+		foreach ((array) $headers as $k => $v)
+		{
+			// Skip item if its index is numeric
+			if ( is_numeric($k) ){ continue; }
+
+			/*			
+			// Handle keys to be passed with or without ': ' at the end
+			//$this->headers[] = trim(trim($k), ':') . ': ' . $v;
+			$cleaned 					= trim(trim($k), ':');	
+			$this->headers[$cleaned] 	= $v;
+			*/
+			$this->setHeader($k, $v);
+		}
 		
 		return $this;
 	}
 	
+	public function setFileBaseName()
+	{	
+		$this->fileBasename = !empty($this->fileBasename) 
+			? $this->fileBasename 
+			//: ( isset($this->request) 
+			: ( !empty($this->request->resource)
+				? $this->request->resource . $this->currentFormat 
+				: $_SERVER['REQUEST_TIME'] . $this->currentFormat
+			);
+		
+		$this->setHeader('Content-Disposition: ', 'attachment; filename=" ' . $this->fileBasename . '.json"');
+	}
 	
 	public function writeHeaders()
-	{
-		foreach ($this->headers as $item){ header($item); }
+	{		
+		//foreach ($this->headers as $item){ header($item); }
+		foreach ($this->headers as $k => $v){ header($k . ': ' . $v); }
 		
 		return $this;
 	}
@@ -167,7 +209,7 @@ Class Response extends Core
 	
 	
 	public function renderJson()
-	{
+	{		
 		$this->setHeader('Content-Type', 'application/json; charset=utf-8;');
 		$this->body = json_encode(isset($this->body) ? $this->body : $this->data);
 		$this->currentFormat = 'json';
@@ -240,6 +282,37 @@ Class Response extends Core
 		$this->body = isset($this->body) ? $this->body : $this->data;
 		$this->currentFormat = 'txt';
 	}
+	
+	public function renderBin()
+	{
+		$this->setHeader('Content-Type: ', 'application/octet-stream');
+		$this->setHeader('Content-Transfer-Encoding: ', 'Binary');
+		
+		$data = isset($this->body) ? $this->body : $this->data;
+		
+		// TODO
+		// Is file ==> readfile, file_get_contents???
+		// is_string:
+		// if ( is_string($data) ) { for($i = 0; $i < strlen($data); $i++) { $this->body = base_covert(ord($data[$i]),10,2); } }
+		// elseif is_numeric($data) {  } 
+		// else { $this->body = pack('H*', $data); } 
+			 
+		// otherwise ???
+		
+		// TODO: open file
+	}
+	
+	public function renderDownload()
+	{
+		$this->setheaders(array(
+			'Content-Type' 				=> 'application/octet-stream',
+			'Content-Transfer-Encoding' => 'Binary',
+		));
+		$this->setFileBaseName();
+		
+		$this->body = isset($this->body) ? $this->body : $this->data;
+	}
+	
 	public function renderXml(){}
 	public function renderCsv(){}
 	

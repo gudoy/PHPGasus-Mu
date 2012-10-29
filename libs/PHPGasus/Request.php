@@ -1,6 +1,6 @@
 <?php
 
-namespace PHPGasus;
+//namespace PHPGasus;
 
 Class Request extends Core
 {
@@ -16,18 +16,26 @@ Class Request extends Core
 		$this->getExtension();
 		$this->getController();
 		
-		// Allways call dispatchMethod (that will redispatch to proper method)	
-		//return call_user_func_array(array(new $this->controllerName($this), 'dispatchMethod'), $this->filters);
 		
-		$cName = 'PHPGasus\\controllers\\' . join('\\', $this->breadcrumbs) . str_replace('//', '\\', $this->controllerRelPath) . $this->controllerName;
+		$this->controllerNamespacedName = $this->controllerName;
+		//$this->controllerNamespacedName = 'PHPGasus\\controllers\\' . str_replace('/', '\\', $this->controllerRelPath) . $this->controllerName;
 		
-//var_dump($cName);
-		
+//var_dump($this);
+//var_dump($this->controllerNamespacedName);
+//die();
+	
 		$this->getMethod();
 		$this->getParams();
 		
-		return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
-		//return call_user_func_array(array(new $cName($this), $this->methodName), $this->filters);
+//die();		// TODO: move this in getController??? Somewehere else???
+		$this->resource = substr(strtolower($this->controllerName), 1);
+		
+//die();
+		//class_exists($this->controllerNamespacedName);
+		
+		//return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
+		return call_user_func_array(array(new $this->controllerNamespacedName($this), $this->methodName), $this->filters);
+		//return call_user_func_array(array(new $this->controllerNamespacedName(null), 'index'), $this->filters);
 	}
 
 	public function getCurrentURL()
@@ -57,17 +65,16 @@ Class Request extends Core
 //var_dump($this->filters);
 	}
 	
-	public function getController()
+	public function getController0()
 	{
-		$p 							= $this->filters;
-		$this->controllerName 		= 'CIndex';
-		$this->controllerRelPath 	= '';
-		$this->breadcrumbs 			= array();
+		$p 								= $this->filters;
+		$this->controllerName 			= 'CIndex';
+		$this->controllerRelPath 		= '';
+		$this->breadcrumbs 				= array();
 		
 		// Controllers/$controler exists?
 		//if ( isset($p[0]) && ( $isFile = file_exists(_PATH_CONTROLLERS . 'C' . ucfirst($p[0]) . '.php') ) && $isFile )
 		//if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile )
-		
 		
 		if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile && class_exists($cName) )
 		{
@@ -79,13 +86,15 @@ Class Request extends Core
 		
 		// TODO: support for folders
 
+		$this->controllerNamespacedName 		= $this->controllerName;
 	}
 	
-	public function getController0()
+	public function getController()
 	{
-		$this->controllerName 		= 'CIndex';
-		$this->controllerRelPath 	= '';
-		$this->breadcrumbs 			= array();
+		$this->controllerName 			= 'CIndex';
+		$this->controllerRelPath 		= '';
+		$this->breadcrumbs 				= array();
+		//$this->controllerNamespacedName = $this->controllerName;
 		
 		// If the site is in maintenance
 		if ( _IN_MAINTENANCE ) {  return; }
@@ -103,40 +112,56 @@ Class Request extends Core
 			$item 		= strtolower($item); 													// Lowercase the item
 			$hasNext 	= isset($this->filters[$i+1]); 											// Check if there's a next part to check against
 			$cName 		= 'C' . ucfirst($item); 												// Controller name
-			$cPath 		= _PATH_CONTROLLERS . join('/', $this->breadcrumbs); 					// Current path to controller
+			$cPath 		= _PATH_CONTROLLERS . 
+				( $this->breadcrumbs ? join('/', $this->breadcrumbs) . '/' : '' ); 					// Current path to controller
 			$cFilepath 	= $cPath . $cName . '.php'; 											// Controller file path	
 
 //var_dump($item);
+//var_dump($cPath);
+//var_dump($cFilepath);
+//var_dump('hasNext:' . (int) $hasNext);
+//var_dump($cFilepath);
+//var_dump('is file:' . (int)is_file($cFilepath));
+//var_dump('is dir:' . (int)is_dir($cPath . $item));
 						
+			
 			// Is an existing folder in controllers?
+			// TODO: require the controller to exists??? For
 			if ( ( $isDir = is_dir($cPath . $item) ) && $isDir )
 			{
 //var_dump('isfolder:' . $isDir);
 //var_dump($cPath);
 //var_dump($cPath . $item . '/' . $cName . '.php');
 
-				if ( ( $isFile = file_exists($cPath . $item . '/' . $cName . '.php') ) && $isFile )
+				if ( ( $isFileinFolder = file_exists($cPath . $item . '/' . $cName . '.php') ) && $isFileinFolder )
 				{
 //var_dump('is file in folder:' . $isFile);
 					$this->controllerName = $cName;
 					$this->controllerRelPath .= $item . '/';
+
+					array_shift($this->filters);
 				}
+				
+				if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
 		
 				// Is there a next item?
-				//if ( $hasNext ){ $Request->breadcrumbs[] = $item; continue; }
-				if ( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
+				if 		( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
+				
+				// Otherwise, does the controller in the same folder or the current directory
+				//if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
 			}
 			// Is an existing controller?
-			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $RC->name = 'C' . ucfirst($item); }
-			
-			// Get method & params to dispatch
-			//$RC->rawName 	= strtolower(substr($RC->name, 1));
-			
-			// Allways call dispatchMethod (that will redispatch to proper method)	
-			//return call_user_func(array(new $RC->name($Request), 'dispatchMethod'));
+			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
 		}
 
-		//require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');	
+//var_dump($this);
+		
+		//$cName = 'PHPGasus\\controllers\\' . join('\\', $this->breadcrumbs) . str_replace('//', '\\', $this->controllerRelPath) . $this->controllerName;
+		//$this->controllerNamespacedName = 'controllers\\' . str_replace('/', '\\', $this->controllerRelPath) . $this->controllerName;
+
+		//require($this->controllerRelPath . $this->controllerName . '.php');
+		//require($cPath . $this->controllerName . '.php');
+		require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
 	}
 	
 	public function getMethod()
@@ -148,17 +173,27 @@ Class Request extends Core
 		//$params = func_get_args(); 
 		$params = &$this->filters;
 		$method = 'index';
+
+//var_dump($params);		
+//var_dump($params[0]);
+//var_dump($this->controllerNamespacedName);
 		
-		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerName, 'create') )
+		//if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerName, 'create') )
+		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerNamespacedName, 'create') )
 		{
 			$method = 'create';
 			array_shift($params);
 		}
-		else if	( isset($params[0]) && method_exists($this->controllerName, $params[0]) && $params[0][0] !== '_' )
+		//else if	( isset($params[0]) && method_exists($this->controllerName, $params[0]) && $params[0][0] !== '_' )
+		else if	( isset($params[0]) && method_exists($this->controllerNamespacedName, $params[0]) && $params[0][0] !== '_' )
 		{
 			$method = $params[0];
 			array_shift($params);			
 		}
+
+//var_dump($this->controllerName);
+//var_dump($method);
+//var_dump(method_exists($this->controllerName, $params[0]));
 
 		$this->methodName = $method;
 
