@@ -84,13 +84,13 @@ Class Response extends Core
 		//'yamltxt' 		=> array('mime' => 'text/plain'), 			// use '.yaml.txt' instead
 		'qr' 			=> array('mime' => 'image/png'),
 		'dataurl' 		=> array('mime' => 'text/plain'),
-		'download' 		=> array('mime' => 'application/force-download')
+		'download' 		=> array('mime' => 'application/force-download'),
 		//'download' 		=> array('application/octet-stream')
 		//'download' 		=> array('application/x-msdownload') 		// for exe/dll ????
+		'csv' 			=> array('mime' => 'text/csv'),
 		// TODO
 		//'php' 			=> array('mime' => 'vnd.php.serialized'),
 		//'phptxt' 			=> array('mime' => 'text/plain'),
-		//'csv' 			=> array('mime' => 'text/csv'),
 		//'rss' 			=> array('mime' => 'application/rss+xml'),
 		//'atom' 			=> array('mime' => 'application/atom+xml'),
 		//'rdf' 			=> array('mime' => 'application/rdf+xml'),
@@ -101,6 +101,7 @@ Class Response extends Core
 	public $body 		= null;
 	public $headers 	= null;
 	public $data 		= null;
+	public $view 		= null;
 	
 	//public function __construct(Request $Request)
 	public function __construct()
@@ -183,7 +184,7 @@ Class Response extends Core
 	}
 	
 	public function renderHtml()
-	{
+	{		
 		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
 		
 		// TODO: use default template (using conf)???
@@ -277,7 +278,6 @@ Class Response extends Core
 	}
 	public function renderTxt()
 	{
-		//header('plain/text');
 		$this->setHeader('Content-Type', 'plain/text'); 
 		$this->body = isset($this->body) ? $this->body : $this->data;
 		$this->currentFormat = 'txt';
@@ -314,15 +314,157 @@ Class Response extends Core
 	}
 	
 	public function renderXml(){}
-	public function renderCsv(){}
+	public function renderCsv()
+	{
+//var_dump(__METHOD__);
+		
+		$output 	= '';
+		$eol 		= PHP_EOL;
+		$o 			= array(
+			'fixbool' 	=> false, 																				// transform bools to their string representation
+			'separator' => !empty($_GET['separator']) && in_array($_GET['separator'], array(',',';','\n','\t')) 
+				? $_GET['separator'] 
+				: ",",
+			'comment' 	=> '#',
+		); 
+		
+		//$buffer = fopen('php://temp', 'r+');
+		// Get current data
+		$data = isset($this->body) ? $this->body : $this->data;
+		
+		// Special case for scalar data
+		if ( is_scalar($data) )
+		{
+			$output .= $o['fixbool'] && is_bool($data) ? ($data == true ? 'true' : 'false') : $data;
+		}
+		// Otherwise
+		else
+		{
+			$keys = array_keys((array) $data);
+			
+			// Loop over the data
+			foreach ($keys as $k)
+			{
+				$isNumIndex 	= !is_numeric($k);
+				$isResource 	= $isNumIndex && DataModel::isResource($k);
+				$addColNames 	= $isResource || !$isNumIndex;
+				
+				// Skip everything that is not the current resource
+				if ( isset($this->request->resource) && $isResource && $k !== $this->request->resource ){ continue; }
+				
+				// Is 
+				
+				// Add a 1st line with column names
+				if ( $addColNames ){ $output .= $o['comment'] . join($sep, $keys) . $eol; }
+
+var_dump($k);
+				
+				$rows = $data[$k];
+				
+var_dump($rows);
+			}
+		}
+		
+		
+		
+
+				
+		$this->setHeader('Content-Type', 'text/csv'); 
+		$this->body = $output;
+		$this->currentFormat = 'csv';
+	}
+
+	public function getTemplate()
+	{
+		
+	}
+
+	public function renderTemplate()
+	{
+		$this->view = new ArrayObject(array_merge(array(
+			// Caching
+			'cache' 					=> _TEMPLATES_CACHING,
+			'cacheId' 					=> null,
+			'cacheLifetime' 			=> null,
+			
+			// Metas
+			'title' 					=> null,
+			'metas' 					=> array(),
+			//'description' 				=> _APP_META_KEYWORDS,
+			//'keywords' 					=> _APP_META_KEYWORDS,
+			'htmlAttributes' 			=> null,
+			//'robotsArchivable' 			=> _APP_META_ROBOTS_ARCHIVABLE,
+			//'robotsIndexable' 			=> _APP_META_ROBOTS_INDEXABLE,
+			//'robotsImagesIndexable' 	=> _APP_META_ROBOTS_IMAGES_INDEXABLE,
+			//'googleTranslatable' 		=> _APP_META_GOOGLE_TRANSLATABLE,
+			'refresh' 					=> null,
+			//'allowPrerendering' 		=> _APP_ALLOW_PAGE_PRERENDERING,
+			
+			// Viewport
+			//'iosWebappCapable' 			=> _APP_IOS_WEBAPP_CAPABLE,
+			//'viewportWidth' 			=> _APP_VIEWPORT_WIDTH,
+			//'viewportIniScale' 			=> _APP_VIEWPORT_INI_SCALE,
+			//'viewportMaxScale' 			=> _APP_VIEWPORT_MAX_SCALE,
+			//'viewportUserScalable' 		=> _APP_VIEWPORT_USER_SCALABLE,
+			
+			//'minifyCSS' 				=> _MINIFY_CSS,
+			//'minifyJS' 					=> _MINIFY_JS,
+			//'minifyHTML' 				=> _MINIFY_HTML,
+		), (array) $this->view,
+		array(
+			/*
+			'minifyCSS' 				=> isset($_GET['minify']) ? in_array($_GET['minify'], array('css','all')) : $this->view->minifyCSS,
+			'minifyJS' 					=> isset($_GET['minify']) ? in_array($_GET['minify'], array('js','all')) : $this->view->minifyJS,
+			'minifyHTML' 				=> isset($_GET['minify']) ? in_array($_GET['minify'], array('html','all')) : $this->view->minifyHTML,
+			 */
+		)), 2);
+		
+		//define('SMARTY_DIR', _PATH_LIBS . 'PHPGasus/templating/Smarty/');
+		//define('SMARTY_PLUGINS_DIR', SMARTY_DIR . 'plugins/');
+		//define('SMARTY_SYSPLUGINS_DIR', SMARTY_DIR . 'sysplugins/');
+		//require (SMARTY_DIR . 'Smarty.class.php');
+		require (_PATH_LIBS . 'PHPGasus/templating/Smarty/Smarty.class.php');
+		
+		
+		// Instanciate a Smarty object and configure it
+		$this->templateEngine 						= new Smarty();
+		$this->templateEngine->compile_check 			= _TEMPLATES_COMPILE_CHECK;
+		$this->templateEngine->force_compile 			= _TEMPLATES_FORCE_COMPILE;
+		$this->templateEngine->caching 				= isset($this->view['cache']) 			? $this->view['cache'] : _TEMPLATES_CACHING;
+		$this->templateEngine->cache_lifetime 		= isset($this->view['cacheLifetime']) 	? $this->view['cacheLifetime'] : _TEMPLATES_CACHE_LIFETIME;
+		$this->templateEngine->template_dir 			= _PATH . 'templates/';
+		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
+		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';	
+		
+//var_dump($this->request);
+		
+		// Variables passed to the templates 
+		$this->template = isset($this->template) 
+			? $this->template 
+			: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl'; 
+		$this->templateData = array('request' => $this->request, 'data' => $this->data, 'view' => $this->view);
+		
+		$this->templateEngine->assign($this->templateData);
+		$this->templateEngine->display($this->template, $this->view->cacheId);
+	}
 	
 	public function render()
 	{
 		// Send headers
 		$this->writeHeaders();
 		
-		// And display body
-		echo $this->body;		
+var_dump($this->currentFormat);
+		
+		// Special when using templating
+		if ( $this->currentFormat === 'html' )
+		{
+			$this->renderTemplate();
+		}
+		// Otherwise, just print the body
+		else
+		{
+			echo $this->body;		
+		}	
 	}
 }
 

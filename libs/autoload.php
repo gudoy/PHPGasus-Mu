@@ -153,6 +153,7 @@ function __autoload2($className)
 // Classes autoloading
 function __autoload($className)
 {
+//var_dump(__METHOD__);
 //var_dump('classname: ' . $className);
 	$className 	= ltrim($className, '\\');
 	$hasNs 		= strpos($className, '\\') !== false;
@@ -168,6 +169,7 @@ function __autoload($className)
 		
 		$known 		= array('C' =>'controllers', 'M' => 'Models'); 										// Known classes types
 		$type 		= isset($known[$first]) && $is2ndUp ? $known[$first] : 'libs'; 		// Set class type
+		
 		$path 		= constant('_PATH_' . strtoupper($type)) . ( $type === 'libs' ? 'PHPGasus' . DIRECTORY_SEPARATOR : ''); 					// Get class type base path
 		
 		$filePath 	= $path . $className . '.php'; 										// Get class filepath		
@@ -180,6 +182,8 @@ function __autoload($className)
 
 		
 	require($filePath);
+	//file_exists($filePath) && require($filePath);
+	//if ( file_exists($filePath) ) { require($filePath); }
 }
 
 spl_autoload_register('__autoload');

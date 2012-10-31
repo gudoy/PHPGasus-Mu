@@ -12,6 +12,7 @@ Class Request extends Core
 		$this->relativeURI 		= str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REQUEST_URI']);
 
 		$this->getCurrentURL();
+		$this->getCurrentURI();
 		$this->getFilters();
 		$this->getExtension();
 		$this->getController();
@@ -40,7 +41,7 @@ Class Request extends Core
 
 	public function getCurrentURL()
 	{
-		if ( isset($this->url) ){ return $this->url(); }
+		if ( isset($this->url) ){ return $this->url; }
 
     	$protocol 		= _APP_PROTOCOL;
 		$host 			= $_SERVER['SERVER_NAME'];
@@ -51,6 +52,39 @@ Class Request extends Core
 		$this->url = $protocol . $host . $_SERVER['REQUEST_URI'];
 		
 		return $this->url;
+	}
+	
+	public function getCurrentURI()
+	{
+//var_dump(__METHOD__);
+		
+		$url 	= $this->getCurrentURL();
+		$dotPos = strpos($url, '.');
+		$hasDot = strpos($url, '.') !== false;
+		
+		if ( !$hasDot )
+		{
+			return $url;
+		}
+		else
+		{	
+			$parts 			= parse_url($url);
+			$parts['path'] 	= preg_replace('/\..*$/','$1', $parts['path']); 
+		
+			$scheme   		= isset($parts['scheme']) ? $parts['scheme'] . '://' : ''; 
+			$host     		= isset($parts['host']) ? $parts['host'] : ''; 
+			$port     		= isset($parts['port']) ? ':' . $parts['port'] : ''; 
+			$user     		= isset($parts['user']) ? $parts['user'] : ''; 
+			$pass     		= isset($parts['pass']) ? ':' . $parts['pass']  : ''; 
+			$pass     		= ($user || $pass) ? "$pass@" : ''; 
+			$path     		= isset($parts['path']) ? $parts['path'] : ''; 
+			$query    		= isset($parts['query']) ? '?' . $parts['query'] : ''; 
+			$fragment 		= isset($parts['fragment']) ? '#' . $parts['fragment'] : ''; 
+  
+			$uri 			= $scheme . $user . $pass . $host . $port . $path . $query . $fragment;
+		}
+		
+		return $uri;
 	}
 
 	public function getFilters()
