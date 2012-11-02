@@ -1498,11 +1498,6 @@ class SmartyCompilerException extends SmartyException  {
  */
 function smartyAutoload($class)
 {
-//var_dump(__METHOD__);
-//var_dump($class);
-
-	//if ( class_exists($class) ) { return; };
-
     $_class = strtolower($class);
     $_classes = array(
         'smarty_config_source' => true,

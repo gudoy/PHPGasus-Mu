@@ -88,6 +88,7 @@ Class Response extends Core
 		//'download' 		=> array('application/octet-stream')
 		//'download' 		=> array('application/x-msdownload') 		// for exe/dll ????
 		'csv' 			=> array('mime' => 'text/csv'),
+		'txt' 			=> array('mime' => 'text/plain'),
 		// TODO
 		//'php' 			=> array('mime' => 'vnd.php.serialized'),
 		//'phptxt' 			=> array('mime' => 'text/plain'),
@@ -436,12 +437,14 @@ var_dump($rows);
 		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
 		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';	
 		
-//var_dump($this->request);
+var_dump($this->request);
 		
 		// Variables passed to the templates 
 		$this->template = isset($this->template) 
 			? $this->template 
-			: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl'; 
+			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl'; 
+			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
+			: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
 		$this->templateData = array('request' => $this->request, 'data' => $this->data, 'view' => $this->view);
 		
 		$this->templateEngine->assign($this->templateData);

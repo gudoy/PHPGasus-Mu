@@ -36,9 +36,13 @@ Class Controller extends Core
 		//$_resp->data = $this->data;
 		$_resp->data = &$this->data;
 		
+//var_dump($_req);
+		
 		// Loop over output format modifiers
 		foreach ((array) $_req->outputModifiers as $format)
 		{
+//var_dump($format);			
+			
 			// Do not continue any longer if there's a current response body and if it's already in the proper format
 			if ( isset($_resp->body) && $_resp->currentFormat === $format ){ continue; }
 			

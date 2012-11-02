@@ -16,14 +16,6 @@ Class Request extends Core
 		$this->getFilters();
 		$this->getExtension();
 		$this->getController();
-		
-		
-		$this->controllerNamespacedName = $this->controllerName;
-		//$this->controllerNamespacedName = 'PHPGasus\\controllers\\' . str_replace('/', '\\', $this->controllerRelPath) . $this->controllerName;
-		
-//var_dump($this);
-//var_dump($this->controllerNamespacedName);
-//die();
 	
 		$this->getMethod();
 		$this->getParams();
@@ -31,12 +23,8 @@ Class Request extends Core
 //die();		// TODO: move this in getController??? Somewehere else???
 		$this->resource = substr(strtolower($this->controllerName), 1);
 		
-//die();
-		//class_exists($this->controllerNamespacedName);
-		
-		//return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
-		return call_user_func_array(array(new $this->controllerNamespacedName($this), $this->methodName), $this->filters);
-		//return call_user_func_array(array(new $this->controllerNamespacedName(null), 'index'), $this->filters);
+
+		return call_user_func_array(array(new $this->controllerName($this), $this->methodName), $this->filters);
 	}
 
 	public function getCurrentURL()
@@ -99,30 +87,6 @@ Class Request extends Core
 //var_dump($this->filters);
 	}
 	
-	public function getController0()
-	{
-		$p 								= $this->filters;
-		$this->controllerName 			= 'CIndex';
-		$this->controllerRelPath 		= '';
-		$this->breadcrumbs 				= array();
-		
-		// Controllers/$controler exists?
-		//if ( isset($p[0]) && ( $isFile = file_exists(_PATH_CONTROLLERS . 'C' . ucfirst($p[0]) . '.php') ) && $isFile )
-		//if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile )
-		
-		if ( isset($p[0]) && ($cName = 'C' . ucfirst($p[0])) && $cName && ($isFile = file_exists(_PATH_CONTROLLERS . $cName . '.php')) && $isFile && class_exists($cName) )
-		{
-			//$this->controllerName = 'C' . ucfirst($p[0]);
-			$this->controllerName = $cName;
-			array_shift($p);
-			$this->filters = $p;
-		}
-		
-		// TODO: support for folders
-
-		$this->controllerNamespacedName 		= $this->controllerName;
-	}
-	
 	public function getController()
 	{
 		$this->controllerName 			= 'CIndex';
@@ -150,52 +114,58 @@ Class Request extends Core
 				( $this->breadcrumbs ? join('/', $this->breadcrumbs) . '/' : '' ); 					// Current path to controller
 			$cFilepath 	= $cPath . $cName . '.php'; 											// Controller file path	
 
-//var_dump($item);
+var_dump($item);
 //var_dump($cPath);
 //var_dump($cFilepath);
 //var_dump('hasNext:' . (int) $hasNext);
 //var_dump($cFilepath);
 //var_dump('is file:' . (int)is_file($cFilepath));
 //var_dump('is dir:' . (int)is_dir($cPath . $item));
-						
+
+//var_dump($this->filters);					
 			
 			// Is an existing folder in controllers?
 			// TODO: require the controller to exists??? For
 			if ( ( $isDir = is_dir($cPath . $item) ) && $isDir )
 			{
-//var_dump('isfolder:' . $isDir);
+var_dump('isfolder:' . $isDir);
+//var_dump('hasNext:' . $hasNext);
 //var_dump($cPath);
 //var_dump($cPath . $item . '/' . $cName . '.php');
 
 				if ( ( $isFileinFolder = file_exists($cPath . $item . '/' . $cName . '.php') ) && $isFileinFolder )
 				{
-//var_dump('is file in folder:' . $isFile);
+var_dump('is file in folder:' . $isFileinFolder);
 					$this->controllerName = $cName;
 					$this->controllerRelPath .= $item . '/';
 
-					array_shift($this->filters);
+					 array_shift($this->filters);
 				}
 				
 				if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
 		
 				// Is there a next item?
+				//if 		( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
 				if 		( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
 				
 				// Otherwise, does the controller in the same folder or the current directory
 				//if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
 			}
 			// Is an existing controller?
-			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
+			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; array_shift($this->filters); }
+			
+			//$this->filters = $hasNext ? array_slice($this->filters, $i+1) : array();
+		
+
 		}
 
 //var_dump($this);
-		
-		//$cName = 'PHPGasus\\controllers\\' . join('\\', $this->breadcrumbs) . str_replace('//', '\\', $this->controllerRelPath) . $this->controllerName;
-		//$this->controllerNamespacedName = 'controllers\\' . str_replace('/', '\\', $this->controllerRelPath) . $this->controllerName;
+//var_dump($this->filters);
+//die();
+			require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
+			
+			return;
 
-		//require($this->controllerRelPath . $this->controllerName . '.php');
-		//require($cPath . $this->controllerName . '.php');
-		require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
 	}
 	
 	public function getMethod()
@@ -208,18 +178,19 @@ Class Request extends Core
 		$params = &$this->filters;
 		$method = 'index';
 
-//var_dump($params);		
+//var_dump($params);
 //var_dump($params[0]);
 //var_dump($this->controllerNamespacedName);
+//var_dump(method_exists($this->controllerNamespacedName, $params[0]));
 		
 		//if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerName, 'create') )
-		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerNamespacedName, 'create') )
+		if ( isset($params[0]) && $params[0] == 'new' && method_exists($this->controllerName, 'create') )
 		{
 			$method = 'create';
 			array_shift($params);
 		}
 		//else if	( isset($params[0]) && method_exists($this->controllerName, $params[0]) && $params[0][0] !== '_' )
-		else if	( isset($params[0]) && method_exists($this->controllerNamespacedName, $params[0]) && $params[0][0] !== '_' )
+		else if	( isset($params[0]) && method_exists($this->controllerName, $params[0]) && $params[0][0] !== '_' )
 		{
 			$method = $params[0];
 			array_shift($params);			

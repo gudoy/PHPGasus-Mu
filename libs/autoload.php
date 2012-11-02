@@ -151,17 +151,22 @@ function __autoload2($className)
 }
 
 // Classes autoloading
-function __autoload($className)
+function phpGasusAutoload($className)
 {
 //var_dump(__METHOD__);
 //var_dump('classname: ' . $className);
+//if ( strpos($className, 'Smarty') !== false ){ return; }
+
 	$className 	= ltrim($className, '\\');
 	$hasNs 		= strpos($className, '\\') !== false;
+	$ds 		= DIRECTORY_SEPARATOR;
 
+	// Handle PSR-0
 	if ( $hasNs )
 	{
-		$filePath = _PATH_LIBS . str_replace('\\', DIRECTORY_SEPARATOR, $className) . '.php';
+		$filePath = _PATH_LIBS . str_replace('\\', $ds, $className) . '.php';
 	}
+	// PHPGasus MV
 	else
 	{
 		$first 		= $className[0]; 													// Get first letter
@@ -169,9 +174,7 @@ function __autoload($className)
 		
 		$known 		= array('C' =>'controllers', 'M' => 'Models'); 										// Known classes types
 		$type 		= isset($known[$first]) && $is2ndUp ? $known[$first] : 'libs'; 		// Set class type
-		
-		$path 		= constant('_PATH_' . strtoupper($type)) . ( $type === 'libs' ? 'PHPGasus' . DIRECTORY_SEPARATOR : ''); 					// Get class type base path
-		
+		$path 		= constant('_PATH_' . strtoupper($type)) . ( $type === 'libs' ? 'PHPGasus' . $ds : ''); 	// Get class type base path
 		$filePath 	= $path . $className . '.php'; 										// Get class filepath		
 	}
 	
@@ -181,11 +184,11 @@ function __autoload($className)
 //var_dump('filePath: ' . $filePath);
 
 		
-	require($filePath);
+	//require($filePath);
 	//file_exists($filePath) && require($filePath);
-	//if ( file_exists($filePath) ) { require($filePath); }
+	if ( file_exists($filePath) ) { require($filePath); }
 }
 
-spl_autoload_register('__autoload');
+spl_autoload_register('phpGasusAutoload');
 
 ?>
