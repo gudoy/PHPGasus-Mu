@@ -87,7 +87,7 @@ Class Request extends Core
 //var_dump($this->filters);
 	}
 	
-	public function getController()
+	public function getController0()
 	{
 		$this->controllerName 			= 'CIndex';
 		$this->controllerRelPath 		= '';
@@ -166,7 +166,87 @@ var_dump('is file in folder:' . $isFileinFolder);
 			
 			return;
 
+	}
+
+	public function getController()
+	{
+		$o = array(
+			'requireFileInFolder' => true,
+		);
+		
+		$this->controllerName 			= 'CIndex';
+		$this->breadcrumbs 				= array();
+		$this->controllerRelPath 		= '';
+		
+		// If the site is in maintenance
+		if ( _IN_MAINTENANCE ) {  return; }
+
+		// Special case for Home (propably the most visited page)
+		// We can optmitize by directly calling the controller
+		elseif ( str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REDIRECT_URL']) === '/' ) { return; }
+
+		// Otherwise,
+		// Loop over the request parts
+		$i = -1;
+		foreach ((array) $this->filters as $item)
+		{
+			$i++;	
+			$item 		= strtolower($item); 													// Lowercase the item
+			$hasNext 	= isset($this->filters[$i+1]); 											// Check if there's a next part to check against
+			$cName 		= 'C' . ucfirst($item); 												// Controller name
+			$cPath 		= _PATH_CONTROLLERS . (!empty($this->breadcrumbs) ? join('/', $this->breadcrumbs) . '/' : ''); 					// Current path to controller		
+			$cFilepath 	= $cPath . $cName . '.php'; 											// Controller file path	
+
+//var_dump($item);
+//var_dump($cPath);
+//var_dump($cFilepath);
+//var_dump('hasNext:' . (int) $hasNext);
+//var_dump($cFilepath);
+//var_dump('is file:' . (int)is_file($cFilepath));
+//var_dump('is dir:' . (int)is_dir($cPath . $item));
+
+//var_dump($this->filters);					
+//var_dump($cPath . $item);
+			
+			// Is an existing folder in controllers?
+			// TODO: require the controller to exists??? For
+			if ( ( $isDir = is_dir($cPath . $item) ) && $isDir )
+			{
+//var_dump('isfolder:' . $isDir);
+//var_dump('hasNext:' . $hasNext);
+//var_dump($cPath);
+//var_dump($cPath . $item . '/' . $cName . '.php');
+
+				$isFileinFolder = $o['requireFileInFolder'] && file_exists($cPath . $item . '/' . $cName . '.php');
+				
+//var_dump('isFileinFolder:' . $isFileinFolder);
+
+				// TODO: test if has index method????
+				if ( $isFileinFolder )
+				{
+					$this->controllerName 	= $cName;
+					$this->breadcrumbs[] 	= $item;
+					array_shift($this->filters);
+				}
+
+				// If has next
+				if 		( $hasNext )		{ continue; }
+				elseif 	( $isFileinFolder )	{ array_shift($this->filters);  }
+			}
+			// Is an existing controller?
+			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; array_shift($this->filters); break; }
+		}
+
+		$this->controllerRelPath = (!empty($this->breadcrumbs) ? join('/', $this->breadcrumbs) . '/' : '');
+
+//var_dump($this);
+//var_dump($this->filters);
+//die();
+		require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
+			
+		return;
 	}
+
 	
 	public function getMethod()
 	{

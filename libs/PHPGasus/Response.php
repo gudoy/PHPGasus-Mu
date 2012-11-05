@@ -437,15 +437,18 @@ var_dump($rows);
 		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
 		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';	
 		
-var_dump($this->request);
+//var_dump($this->request);
 		
 		// Variables passed to the templates 
 		$this->template = isset($this->template) 
 			? $this->template 
 			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl'; 
 			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
-			: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
+			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
+			: 'pages/' . (!empty($this->request->breadcrumbs) ? join('/' , $this->request->breadcrumbs) . '/' : '') . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
 		$this->templateData = array('request' => $this->request, 'data' => $this->data, 'view' => $this->view);
+		
+//var_dump($this->template);
 		
 		$this->templateEngine->assign($this->templateData);
 		$this->templateEngine->display($this->template, $this->view->cacheId);
@@ -456,7 +459,7 @@ var_dump($this->request);
 		// Send headers
 		$this->writeHeaders();
 		
-var_dump($this->currentFormat);
+//var_dump($this->currentFormat);
 		
 		// Special when using templating
 		if ( $this->currentFormat === 'html' )
