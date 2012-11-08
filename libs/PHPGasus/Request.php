@@ -219,7 +219,7 @@ var_dump('is file in folder:' . $isFileinFolder);
 
 				$isFileinFolder = $o['requireFileInFolder'] && file_exists($cPath . $item . '/' . $cName . '.php');
 				
-//var_dump('isFileinFolder:' . $isFileinFolder);
+//var_dump('isFileinFolder:' . (int)$isFileinFolder);
 
 				// TODO: test if has index method????
 				if ( $isFileinFolder )
@@ -239,7 +239,7 @@ var_dump('is file in folder:' . $isFileinFolder);
 
 		$this->controllerRelPath = (!empty($this->breadcrumbs) ? join('/', $this->breadcrumbs) . '/' : '');
 
-//var_dump($this);
+//var_dump($this);
 //var_dump($this->filters);
 //die();
 		require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');

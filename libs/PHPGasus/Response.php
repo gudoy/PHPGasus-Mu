@@ -185,14 +185,23 @@ Class Response extends Core
 	}
 	
 	public function renderHtml()
-	{		
+	{
+//var_dump(__METHOD__);
+				
 		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
+		
+		$this->useTemplate = isset($this->useTemplate) 
+			? $this->useTemplate 
+			//: ( isset($this->body) && ( empty($this->request->outputModifiers) || in_array($this->request->outputModifiers[0], array('html','xhtml')) ) ? false : true );
+			: ( isset($this->body) ? false : true );
+			
+//var_dump('useTemplate: ' . (int) $this->useTemplate);
 		
 		// TODO: use default template (using conf)???
 		// Has the template been defined
 		if ( !empty($this->template) && file_exists($this->template) )
 		{
-			$this->body = str_replace('public/', '/public/', file_get_contents($this->template));	
+			$this->body = str_replace('public/', '/public/', file_get_contents($this->template));
 		}
 		// Assume returned data are already in HTML
 		else
@@ -381,7 +390,7 @@ var_dump($rows);
 	}
 
 	public function renderTemplate()
-	{
+	{		
 		$this->view = new ArrayObject(array_merge(array(
 			// Caching
 			'cache' 					=> _TEMPLATES_CACHING,
@@ -390,7 +399,7 @@ var_dump($rows);
 			
 			// Metas
 			'title' 					=> null,
-			'metas' 					=> array(),
+			'metas' 			 		=> array(),
 			//'description' 				=> _APP_META_KEYWORDS,
 			//'keywords' 					=> _APP_META_KEYWORDS,
 			'htmlAttributes' 			=> null,
@@ -438,6 +447,9 @@ var_dump($rows);
 		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';	
 		
 //var_dump($this->request);
+//var_dump(end($_req->breadcrumbs));
+
+		$_req = $this->request;
 		
 		// Variables passed to the templates 
 		$this->template = isset($this->template) 
@@ -445,13 +457,49 @@ var_dump($rows);
 			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl'; 
 			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
 			//: 'pages/' . $this->request->controllerRelPath . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
-			: 'pages/' . (!empty($this->request->breadcrumbs) ? join('/' , $this->request->breadcrumbs) . '/' : '') . $this->request->resource . '/' . $this->request->methodName . '.html.tpl';
-		$this->templateData = array('request' => $this->request, 'data' => $this->data, 'view' => $this->view);
+			: 'pages/' 
+				. (!empty($_req->breadcrumbs) ? join('/' , $_req->breadcrumbs) . '/' : '') 
+				//. $_req->resource . '/' 
+				. ( !empty($_req->breadcrumbs) && end($_req->breadcrumbs) === $_req->resource ? '' : $_req->resource . '/' )
+				. $_req->methodName 
+				. '.html.tpl';
+		$this->templateData = array(
+			'request' 	=> $this->request, 
+			'data' 		=> $this->data, 
+			'view' 		=> $this->view,
+			//'response' 	=> $this,
+		);
+		
+		unset($_req);
+		
+		$this->templateEngine->assign($this->templateData);
 		
 //var_dump($this->template);
 		
-		$this->templateEngine->assign($this->templateData);
-		$this->templateEngine->display($this->template, $this->view->cacheId);
+		try
+		{
+			$this->templateEngine->display($this->template, $this->view->cacheId);
+		}
+		catch(Exception $e)
+		{
+//var_dump($e->getMessage());
+//var_dump($e);
+
+
+			echo $e->getMessage() . "<br/>";
+			//$this->errors[] = array('msg' => $e->getMessage());
+			
+			$defaultTpl = 'pages/default.html.tpl';
+			
+			if ( strpos($e->getMessage(), 'Unable to load template file') !== false )
+			{
+				// TODO: in PROD env, use 404 template, and in others env use default template?????
+				$this->templateEngine->display($defaultTpl, $this->view->cacheId);	
+			}
+
+		}
+		
+		
 	}
 	
 	public function render()
@@ -462,7 +510,7 @@ var_dump($rows);
 //var_dump($this->currentFormat);
 		
 		// Special when using templating
-		if ( $this->currentFormat === 'html' )
+		if ( $this->currentFormat === 'html' && ( !isset($this->useTemplate) || $this->useTemplate ) )
 		{
 			$this->renderTemplate();
 		}

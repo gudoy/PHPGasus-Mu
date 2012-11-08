@@ -26,8 +26,9 @@ Response
 	- statusCodes:
 	- knownFormats:
 	- headers:
-	- body:
-	- data:
+	- body: Content of the response that will be sent. Unless you want to force it's value (e.g. if you want to set the force the html content of your view), do not set it. PHPGasus will handle this properly. 
+	- data: This should content the resource(s) that will be rendered.
+	- useTemplate: set this to false to prevent using templating system and handle this yourself.
 	- setSatusCode():
 	- setHeader($name, $value)
 	- setHeaders($assoc):
@@ -35,6 +36,7 @@ Response
 	- writeHeaders():
 	- render + $format():
 	- render()
+	- renderTemplate(): if the response has to use a template, load the template engine and render the template. If you directly set $this->response->body in you controller, no template will be used 
 
 Controller
 	- __construct(Request)

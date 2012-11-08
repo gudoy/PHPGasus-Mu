@@ -28,29 +28,8 @@ define("_URL", 							_APP_PROTOCOL . $_SERVER['HTTP_HOST'] . rtrim(_PATH_REL, '
 define("_URL_REL", 						'/' . _PATH_REL);
 define("_URL_STATIC", 					_APP_PROTOCOL . 'static.' . _DOMAIN . '/');
 define("_URL_STATIC_1", 				_APP_PROTOCOL . 'static1.' . _DOMAIN . '/');
-
-
-# Security
-ini_set('session.cookie_httponly', 	1);
-ini_set('session.cookie_secure', 	_APP_PROTOCOL === 'https' ? 1 :0 ); // Only active this when used with https
-
-# Errors
-// error_reporting(E_ERROR | E_PARSE); 				// PROD:
-//error_reporting(E_ALL | E_STRICT | E_DEPRECATED);
-error_reporting(2147483647); 						// DEV: display all errors
-ini_set('display_errors', 1);
-
-
-ini_set('xdebug.var_display_max_depth', 6);
-ini_set('xdebug.var_display_max_data', 99999);
-ini_set('xdebug.var_display_max_children', 999);
-ini_set('xdebug.max_nesting_level', 500); // default is 100, which can be cumbersome with smarty 
-
-
-// Force timezone to UTC
-// TODO: handle this properly (allow user to choose its tz)
-//$old = date_default_timezone_get();
-date_default_timezone_set('UTC');
-
+define("_URL_STATIC_2", 				_APP_PROTOCOL . 'static2.' . _DOMAIN . '/');
+define("_URL_STATIC_3", 				_APP_PROTOCOL . 'static3.' . _DOMAIN . '/');
+define("_URL_STATIC_4", 				_APP_PROTOCOL . 'static4.' . _DOMAIN . '/');
 
 ?>
