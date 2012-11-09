@@ -331,16 +331,21 @@ Class Response extends Core
 		$output 	= '';
 		$eol 		= PHP_EOL;
 		$o 			= array(
-			'fixbool' 	=> false, 																				// transform bools to their string representation
-			'separator' => !empty($_GET['separator']) && in_array($_GET['separator'], array(',',';','\n','\t')) 
+			'fixbool' 			=> false, 																				// transform bools to their string representation
+			'separator' 		=> !empty($_GET['separator']) && in_array($_GET['separator'], array(',',';','\n','\t')) 
 				? $_GET['separator'] 
 				: ",",
-			'comment' 	=> '#',
+			'addColumnNames' 	=> true,
+			'addComments' 		=> true,
+			'comment' 			=> '#',
+			'eol' 				=> PHP_EOL,
 		); 
 		
 		//$buffer = fopen('php://temp', 'r+');
 		// Get current data
 		$data = isset($this->body) ? $this->body : $this->data;
+		
+//var_dump($data);
 		
 		// Special case for scalar data
 		if ( is_scalar($data) )
@@ -350,34 +355,89 @@ Class Response extends Core
 		// Otherwise
 		else
 		{
-			$keys = array_keys((array) $data);
+			// Possible cases:
+			// - several resources containing collection: $data = array('users' => $users, 'products' => $products, ...)
+			// - only 1 resource : $data = array('users' => $users)
+			
+			$keys 				= array_keys((array) $data);
+			$pattern 			= null;
+			$collectionsCount 	= 0;
+			$itemsCount 		= 0;
 			
 			// Loop over the data
 			foreach ($keys as $k)
 			{
-				$isNumIndex 	= !is_numeric($k);
-				$isResource 	= $isNumIndex && DataModel::isResource($k);
-				$addColNames 	= $isResource || !$isNumIndex;
+				if ( !$pattern )
+				{
+					$isNumIndex 	= is_numeric($k);
+					$isResource 	= DataModel::isResource($k);
+					$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'several'; // 'single' or 'multiple' resources	
+				}
 				
-				// Skip everything that is not the current resource
-				if ( isset($this->request->resource) && $isResource && $k !== $this->request->resource ){ continue; }
-				
-				// Is 
-				
-				// Add a 1st line with column names
-				if ( $addColNames ){ $output .= $o['comment'] . join($sep, $keys) . $eol; }
+				// Handle case where the current looped item is a collection
+				if ( $pattern === 'multiple' )
+				{
+					// Get current collection
+					$collection = $data[$k];
+					
+					// Loop over the collection items
+					foreach (array_keys($collection) as $itemIndex)
+					{
+						// Get current item
+						$item = $collection[$itemIndex];
+						
+						if ( is_scalar($item) )
+						{
+							$output .= $o['fixbool'] && is_bool($item) ? ($item == true ? 'true' : 'false') : $item;
+							$output .= $o['eol'];
+						}
+						else
+						{
+							// Loop over the item columns
+							if ( $itemsCount === 0 && $o['addComments'] && $o['addColumnNames'] )
+							{
+								// Add a 1st line with column names
+								$output .= $o['comment'] . join($o['separator'], array_keys($item)) . $o['eol'];
+							}
+							
+							// TODO: loop over column values to be able to fix types?????
+							$output .= join($o['separator'], $item);
+							$output .= $o['eol'];
+						}
 
-var_dump($k);
-				
-				$rows = $data[$k];
-				
-var_dump($rows);
+						$itemsCount++;
+					}
+					
+					unset($collection);
+					$collectionsCount++;
+				}
+				else
+				{
+					// Get current collection
+					$item = $data[$k];
+					
+					if ( is_scalar($item) )
+					{
+						$output .= $o['fixbool'] && is_bool($item) ? ($item == true ? 'true' : 'false') : $item;
+					}
+					else
+					{
+						// Loop over the item columns
+						if ( $itemsCount === 0 && $o['addComments'] && $o['addColumnNames'] )
+						{
+							// Add a 1st line with column names
+							$output .= $o['comment'] . join($o['separator'], array_keys($item)) . $o['eol'];
+						}
+						
+						// TODO: loop over column values to be able to fix types?????
+						$output .= join($o['separator'], $item);
+					}
+					
+					$output .= $o['eol'];
+					$itemsCount++;					
+				}
 			}
 		}
-		
-		
-		
-
 				
 		$this->setHeader('Content-Type', 'text/csv'); 
 		$this->body = $output;
