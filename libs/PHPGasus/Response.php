@@ -328,6 +328,9 @@ Class Response extends Core
 	{
 //var_dump(__METHOD__);
 		
+//var_dump($this);
+//die();
+		
 		$output 	= '';
 		$eol 		= PHP_EOL;
 		$o 			= array(
@@ -338,7 +341,7 @@ Class Response extends Core
 			'addColumnNames' 	=> true,
 			'addComments' 		=> true,
 			'comment' 			=> '#',
-			'eol' 				=> PHP_EOL,
+			'eol' 				=> PHP_EOL . ($this->request->outputFormat === 'html' ? '<br/>' : ''),
 		); 
 		
 		//$buffer = fopen('php://temp', 'r+');
@@ -371,8 +374,10 @@ Class Response extends Core
 				{
 					$isNumIndex 	= is_numeric($k);
 					$isResource 	= DataModel::isResource($k);
-					$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'several'; // 'single' or 'multiple' resources	
+					$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'single'; // 'single' or 'multiple' resources	
 				}
+				
+//var_dump($pattern);
 				
 				// Handle case where the current looped item is a collection
 				if ( $pattern === 'multiple' )
@@ -389,7 +394,6 @@ Class Response extends Core
 						if ( is_scalar($item) )
 						{
 							$output .= $o['fixbool'] && is_bool($item) ? ($item == true ? 'true' : 'false') : $item;
-							$output .= $o['eol'];
 						}
 						else
 						{
@@ -401,10 +405,20 @@ Class Response extends Core
 							}
 							
 							// TODO: loop over column values to be able to fix types?????
-							$output .= join($o['separator'], $item);
-							$output .= $o['eol'];
+							//$output .= join($o['separator'], $item);
+							$tmpCount = 0;
+							foreach ($item as $val)
+							{
+								if ( $tmpCount !== 0 ) { $output .= $o['separator']; } 
+	
+								$output .= $o['fixbool'] && is_bool($val) 
+									? ($val == true ? 'true' : 'false') 
+									: (is_bool($val) ? (string) (int) $val : $val);
+								$tmpCount++;
+							}
 						}
 
+						$output .= $o['eol'];
 						$itemsCount++;
 					}
 					
@@ -416,9 +430,15 @@ Class Response extends Core
 					// Get current collection
 					$item = $data[$k];
 					
+//var_dump($item);
+					
 					if ( is_scalar($item) )
 					{
-						$output .= $o['fixbool'] && is_bool($item) ? ($item == true ? 'true' : 'false') : $item;
+//var_dump($item);
+//var_dump((string) $item);
+						$output .= $o['fixbool'] && is_bool($item) 
+							? ($item == true ? 'true' : 'false') 
+							: (is_bool($item) ? (string) (int) $item : $item);
 					}
 					else
 					{
@@ -430,7 +450,17 @@ Class Response extends Core
 						}
 						
 						// TODO: loop over column values to be able to fix types?????
-						$output .= join($o['separator'], $item);
+						//$output .= join($o['separator'], $item);
+						$tmpCount = 0;
+						foreach ($item as $val)
+						{
+							if ( $tmpCount !== 0 ) { $output .= $o['separator']; } 
+
+							$output .= $o['fixbool'] && is_bool($val) 
+								? ($val == true ? 'true' : 'false') 
+								: (is_bool($val) ? (string) (int) $val : $val);
+							$tmpCount++;
+						}
 					}
 					
 					$output .= $o['eol'];
