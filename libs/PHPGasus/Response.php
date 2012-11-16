@@ -58,6 +58,7 @@ Class Response extends Core
 		415 => 'Unsupported Media Type',
 		416 => 'Requested range unsatisfiable',
 		417 => 'Expectation Failed',
+		418 => 'I\'am a teapot',
 		
 		// Server error
 		500 => 'Internal server error',
@@ -70,33 +71,39 @@ Class Response extends Core
 	
 	// formats params: mime, headers, ...
 	public $knownFormats = array(
+		// Text formats
 		'html' 			=> array('mime' => 'text/html'),
 		'xhtml' 		=> array('mime' => 'application/xhtml+xml'),
 		'json' 			=> array('mime' => 'application/json'),
 		'jsonp' 		=> array('mime' => 'application/json'),
-		//'jsontxt' 		=> array('mime' => 'text/plain' ), 			// use '.json.txt' instead
 		'jsonreport' 	=> array('mime' => 'application/json'),
 		'xml' 			=> array('mime' => 'application/xml'),
-		//'xmltxt' 		=> array('mime' => 'text/plain'), 				// use '.xml.txt' instead
 		'plist' 		=> array('mime' => 'application/plist+xml'),
-		//'plisttxt' 		=> array('mime' => 'text/plain'), 			// use '.plist.txt' instead
 		'yaml' 			=> array('mime' => 'text/yaml'),
-		//'yamltxt' 		=> array('mime' => 'text/plain'), 			// use '.yaml.txt' instead
-		'qr' 			=> array('mime' => 'image/png'),
 		'dataurl' 		=> array('mime' => 'text/plain'),
-		'download' 		=> array('mime' => 'application/force-download'),
-		//'download' 		=> array('application/octet-stream')
-		//'download' 		=> array('application/x-msdownload') 		// for exe/dll ????
+		'datauri' 		=> array('mime' => 'text/plain'),
 		'csv' 			=> array('mime' => 'text/csv'),
 		'txt' 			=> array('mime' => 'text/plain'),
+		
+		// Image formats
+		'qr' 			=> array('mime' => 'image/png'),
+		
+		// Binary formats
+		'download' 		=> array('mime' => 'application/force-download'),
+		//'download' 		=> array('application/octet-stream'),
+		//'download' 		=> array('application/x-msdownload'), 		// for exe/dll ????
+		//'bin' 				=> array('application/octet-stream'),
+		
+		// Archive formats
+		'zip' 			=> array('mime' => 'application/zip'),
+		//'gz' 				=> array('mime' => 'multipart/x-gzip'),
+		//'rar' 			=> array('mime' => 'application/rar'),
+		
 		// TODO
-		//'php' 			=> array('mime' => 'vnd.php.serialized'),
-		//'phptxt' 			=> array('mime' => 'text/plain'),
+		'php' 			=> array('mime' => 'vnd.php.serialized'),
 		//'rss' 			=> array('mime' => 'application/rss+xml'),
 		//'atom' 			=> array('mime' => 'application/atom+xml'),
 		//'rdf' 			=> array('mime' => 'application/rdf+xml'),
-		//'zip' 			=> array('mime' => 'application/rdf+xml'),
-		//'gz' 				=> array('mime' => 'multipart/x-gzip'),
 	);
 	
 	public $body 		= null;
@@ -128,7 +135,7 @@ Class Response extends Core
 		
 		$this->headers[] = 'HTTP/' . $this->httpVersion . ' ' . $this->statusCode;
 		
-		// TODO: if status === 204, render directly ?
+		// TODO: if status === 204, render directly?
 		
 		return $this;
 	}
@@ -136,8 +143,6 @@ Class Response extends Core
 	public function setHeader($name, $value)
 	{
 		// Handle keys to be passed with or without ': ' at the end
-		//$this->headers[] = $name . ': ' . $value;
-		//$this->headers[] = trim(trim($name), ':') . ': ' . $value;
 		$cleaned 					= trim(trim($name), ':');
 		$this->headers[$cleaned] 	= $value;
 		
@@ -151,12 +156,6 @@ Class Response extends Core
 			// Skip item if its index is numeric
 			if ( is_numeric($k) ){ continue; }
 
-			/*			
-			// Handle keys to be passed with or without ': ' at the end
-			//$this->headers[] = trim(trim($k), ':') . ': ' . $v;
-			$cleaned 					= trim(trim($k), ':');	
-			$this->headers[$cleaned] 	= $v;
-			*/
 			$this->setHeader($k, $v);
 		}
 		
@@ -173,22 +172,26 @@ Class Response extends Core
 				: $_SERVER['REQUEST_TIME'] . $this->currentFormat
 			);
 		
-		$this->setHeader('Content-Disposition: ', 'attachment; filename=" ' . $this->fileBasename . '.json"');
+		$this->setHeader('Content-Disposition: ', 'attachment; filename="' . $this->fileBasename . '.' . $this->request->outputFormat . '"');
 	}
 	
 	public function writeHeaders()
 	{		
-		//foreach ($this->headers as $item){ header($item); }
 		foreach ($this->headers as $k => $v){ header($k . ': ' . $v); }
 		
 		return $this;
+	}
+	
+	public function renderDefault()
+	{
+		$this->{'render' . _DEFAULT_OUTPUT_FORMAT}();
 	}
 	
 	public function renderHtml()
 	{
 //var_dump(__METHOD__);
 				
-		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
 		
 		$this->useTemplate = isset($this->useTemplate) 
 			? $this->useTemplate 
@@ -213,7 +216,7 @@ Class Response extends Core
 	}
 	public function renderXhtml()
 	{
-		$this->setHeader('Content-Type', 'application/xhtml+xml; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['xhtml']['mime'] . '; charset=utf-8;');
 		$this->renderHtml();
 		$this->currentFormat = 'html';
 	}
@@ -221,14 +224,14 @@ Class Response extends Core
 	
 	public function renderJson()
 	{		
-		$this->setHeader('Content-Type', 'application/json; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
 		$this->body = json_encode(isset($this->body) ? $this->body : $this->data);
 		$this->currentFormat = 'json';
 	}
 	
 	public function renderJsonp()
 	{
-		$this->setHeader('Content-Type', 'application/json; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
 		
 		$callback = !empty($_GET['callback']) ? filter_var($_GET['callback'], FILTER_SANITIZE_STRING) : null;
 		$callback = !empty($callback) ? $callback : 'callback';
@@ -240,7 +243,7 @@ Class Response extends Core
 
 	public function renderJsonreport()
 	{
-		$this->setHeader('Content-Type', 'text/html; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
 		
 		$this->renderJson();
 		$this->body = '<div id="json" class="jsonreport">' . $this->body . '</div>';
@@ -249,9 +252,10 @@ Class Response extends Core
 		$this->currentFormat = 'jsonp';
 	}
 	
+	public function renderDatauri(){ return $this->renderdatauri(); }
 	public function renderDataurl()
 	{
-		$this->setHeader('Content-Type', 'plain/text; charset=utf-8;');
+		$this->setHeader('Content-Type', $this->knownFormats['dataurl']['mime']);
 
 		$data = isset($this->body) ? $this->body : $this->data;
 		
@@ -288,15 +292,17 @@ Class Response extends Core
 	}
 	public function renderTxt()
 	{
-		$this->setHeader('Content-Type', 'plain/text'); 
+		$this->setHeader('Content-Type', $this->knownFormats['txt']['mime'] . '; charset=utf-8;');
 		$this->body = isset($this->body) ? $this->body : $this->data;
 		$this->currentFormat = 'txt';
 	}
 	
 	public function renderBin()
 	{
-		$this->setHeader('Content-Type: ', 'application/octet-stream');
-		$this->setHeader('Content-Transfer-Encoding: ', 'Binary');
+		$this->setheaders(array(
+			'Content-Type' 				=> $this->knownFormats['bin']['mime'],
+			'Content-Transfer-Encoding' => 'Binary',
+		));
 		
 		$data = isset($this->body) ? $this->body : $this->data;
 		
@@ -315,7 +321,7 @@ Class Response extends Core
 	public function renderDownload()
 	{
 		$this->setheaders(array(
-			'Content-Type' 				=> 'application/octet-stream',
+			'Content-Type' 				=> $this->knownFormats['download']['mime'],
 			'Content-Transfer-Encoding' => 'Binary',
 		));
 		$this->setFileBaseName();
@@ -468,14 +474,63 @@ Class Response extends Core
 				}
 			}
 		}
-				
-		$this->setHeader('Content-Type', 'text/csv'); 
+		
+		$this->setHeader('Content-Type', $this->knownFormats['csv']['mime'] . '; charset=utf-8;');
 		$this->body = $output;
 		$this->currentFormat = 'csv';
 	}
 
+	public function renderPhp()
+	{		
+		$this->setHeader('Content-Type', $this->knownFormats['php']['mime']);
+		$this->body = serialize(isset($this->body) ? $this->body : $this->data);
+		$this->currentFormat = 'txt';
+	}
+
+
+	public function renderZip()
+	{
+		if 	( !extension_loaded('zip') )
+		{
+			// TODO: what should we do? Throw an error/exception??? If no previous modifiers, render default output???
+			return;
+		} 
+		
+		$this->body = isset($this->body) ? $this->body : $this->data;
+		
+		// Create a zip archive, open it for writing
+		$zipFile 		= tempnam('tmp', 'zip');
+		$zip 			= new ZipArchive();
+		$zip->open($zipFile, ZipArchive::OVERWRITE);
+		
+		// Is file
+			// wrap file in a zip
+			//$zip->addFile($file);
+		// Case no modifiers
+			// render as default output format first
+			//$this->renderDefault();
+			//$zip->addFromString($this->body);
+		// Otherwise
+			// Create file
+			//$zip->addFromString($this->body);
+		
+		$zip->close();
+		
+		$this->setHeaders(array(
+			'Content-Type' 		=> $this->knownFormats['zip']['mime'],
+			'Content-Length' 	=> filesize($zipFile),
+		));		
+		$this->setFileBaseName();
+		$this->currentFormat = 'zip';
+		
+		// Push the file to the client & delete the zip
+		readfile($zipFile);
+		//unlink($zipFile);
+	}
+
 	public function getTemplate()
 	{
+		
 		
 	}
 

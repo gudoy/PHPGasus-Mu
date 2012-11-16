@@ -1,5 +1,6 @@
 Application
 	- init(): 
+	- initEnv(): Init environment
 
 Request
 	- url: (string) requested url
@@ -21,21 +22,22 @@ Request
 	- getParams(): 
 	
 Response
-	- httpVersion:
-	- statusCode:
-	- statusCodes:
-	- knownFormats:
-	- headers:
+	- httpVersion: Version of the response http protocol version (default = '1.1') 
+	- statusCode: Status code returned by the current response (default = 200)
+	- statusCodes: List of known status codes [$code => $name]
+	- knownFormats: List of kown outputs formats [$format => $mimetype]
+	- headers: List of headers that will be returned with the response [$name => $value]
 	- body: Content of the response that will be sent. Unless you want to force it's value (e.g. if you want to set the force the html content of your view), do not set it. PHPGasus will handle this properly. 
 	- data: This should content the resource(s) that will be rendered.
 	- useTemplate: set this to false to prevent using templating system and handle this yourself.
-	- setSatusCode():
+	- setSatusCode(): Convenience method for setting the response status code with the version hearder
 	- setHeader($name, $value)
 	- setHeaders($assoc):
 	- setFileBasename():
 	- writeHeaders():
 	- render + $format():
-	- render()
+	- renderDefault(): Convenience method for calling the default output format method
+	- render():
 	- renderTemplate(): if the response has to use a template, load the template engine and render the template. If you directly set $this->response->body in you controller, no template will be used 
 
 Controller
