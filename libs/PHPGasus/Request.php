@@ -304,6 +304,10 @@ var_dump('is file in folder:' . $isFileinFolder);
 		
 		// Try to get expected output format
 		$info 					= pathinfo(rtrim($this->extension, '.'));
+		
+		// Do not continue any longer if the last param does not contains extension
+		if ( empty($info['extension']) ) { return; }
+		
 		$this->outputFormat 	= $info['extension'];
 		
 		// Try to find modifiers to apply to output format 

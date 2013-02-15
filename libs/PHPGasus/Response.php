@@ -583,13 +583,14 @@ Class Response extends Core
 		
 		// Instanciate a Smarty object and configure it
 		$this->templateEngine 						= new Smarty();
-		$this->templateEngine->compile_check 			= _TEMPLATES_COMPILE_CHECK;
-		$this->templateEngine->force_compile 			= _TEMPLATES_FORCE_COMPILE;
+		$this->templateEngine->compile_check 		= _TEMPLATES_COMPILE_CHECK;
+		$this->templateEngine->force_compile 		= _TEMPLATES_FORCE_COMPILE;
 		$this->templateEngine->caching 				= isset($this->view['cache']) 			? $this->view['cache'] : _TEMPLATES_CACHING;
 		$this->templateEngine->cache_lifetime 		= isset($this->view['cacheLifetime']) 	? $this->view['cacheLifetime'] : _TEMPLATES_CACHE_LIFETIME;
-		$this->templateEngine->template_dir 			= _PATH . 'templates/';
+		$this->templateEngine->template_dir 		= _PATH . 'templates/';
 		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
-		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';	
+		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';
+		$this->templateEngine->error_reporting 		= E_ALL & ~E_NOTICE;
 		
 //var_dump($this->request);
 //var_dump(end($_req->breadcrumbs));
