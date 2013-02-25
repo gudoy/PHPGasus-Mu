@@ -297,23 +297,71 @@ var_dump('is file in folder:' . $isFileinFolder);
 		$this->outputFormat 	= _DEFAULT_OUTPUT_FORMAT;
 		$this->outputModifiers 	= null;
 		
-		// Do not continue any longer if the last param does not contains extension
-		if ( $dotPos === false ) { return; }
-		
-		$this->filters[$lastKey] = substr($last, 0, $dotPos);
-		
 		// Try to get expected output format
-		$info 					= pathinfo(rtrim($this->extension, '.'));
+		$info 					= $dotPos !== false ? pathinfo(rtrim($this->extension, '.')) : null;
+		$ext 					= !empty($info['extension']) ? $info['extension'] : null; 
 		
-		// Do not continue any longer if the last param does not contains extension
-		if ( empty($info['extension']) ) { return; }
+		// Remove the extension in the last filter
+		if ( $dotPos ){ $this->filters[$lastKey] = substr($last, 0, $dotPos); } 
 		
-		$this->outputFormat 	= $info['extension'];
-		
-		// Try to find modifiers to apply to output format 
-		//$cleaned 				= trim(str_replace($this->outputFormat, '', $this->extension), '.');
-		$cleaned 				= trim(preg_replace('/' . $this->outputFormat . '$/', '', $this->extension), '.');
-		$this->outputModifiers 	= empty($cleaned) ? array() : explode('.', $cleaned);
+		// If no known extension has been passed
+		if ( !$ext || !isset(Response::$knownFormats[$ext]) )
+		{
+			// Get the 'accept' http header and split it to get all the accepted mime type with their prefered priority
+			$accepts 	= !empty($_SERVER['HTTP_ACCEPT']) ? explode(',',$_SERVER['HTTP_ACCEPT']) : array();
+			$prefs 		= array();
+			$i 			= 1;
+			$len 		= count($accepts);
+			foreach ($accepts as $item)
+			{				
+				$mime 			= preg_replace('/(.*);(.*)$/', '$1', trim($item)); 										// just get the mime type (or like)
+				
+				// Do not process mime types that have already been found earlier in the loop (prevent priority conflicts)
+				if ( !empty($prefs[$mime]) ){ continue; }
+				
+				$q 				= strpos($item, 'q=') !== false ? preg_replace('/.*q=()(,;\s)?/Ui','$1',$item) : 1; 	// get the priority (default=1)
+				$prefs[$mime] 	= $q*100 + ($len);
+				$len--;
+			}
+			
+			// Fix this fucking webkit that prefer xml over html
+			//if ( $this->browser['engine'] === 'webkit' )
+			$ua = !empty($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null;
+			if ( strpos($ua, 'webkit/') !== false )
+			{				
+				if ( isset($prefs['application/xml']) && isset($prefs['application/xhtml+xml']) && isset($prefs['text/html']) )
+				{		
+					$prefs['application/xml'] 	= $prefs['application/xml']-(2);
+					$prefs['text/html'] 		= 150;
+					
+					if ( isset($prefs['image/png']) ){ $prefs['image/png'] = $prefs['application/xml']-(5); }
+				}
+			}
+			
+			// Sort by type priority
+			arsort($prefs);
+			
+			// Now, loop over the types and break as soon as we find a known type
+			foreach ($prefs as $pref => $priority)
+			{
+				$result = array_search(array('mime' => $pref), Response::$knownFormats);
+				 
+				// If it's a known type, stop here
+				if ( $result ){ $this->outputFormat = $result; break; }
+			}
+			
+			// If no valid output format has been found, fallback to the default one
+			if ( empty($this->outputFormat) ){ $this->outputFormat = _DEFAULT_OUTPUT_FORMAT; }
+		}
+		// Otherwise, set it as the output format and look for output modifiers
+		else
+		{
+			$this->outputFormat 	= $ext;
+			
+			// Try to find modifiers to apply to output format 
+			$cleaned 				= trim(preg_replace('/' . $this->outputFormat . '$/', '', $this->extension), '.');
+			$this->outputModifiers 	= empty($cleaned) ? array() : explode('.', $cleaned);
+		}
 	}
 	
 	public function getParams()

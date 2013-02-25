@@ -70,7 +70,11 @@ Class Response extends Core
 	);
 	
 	// formats params: mime, headers, ...
-	public $knownFormats = array(
+	public static $knownFormats = array(
+		// !! Warning !! 
+		// Order is important for reverse search (getting the extension from the mime)
+		// When multiple formats share the same mime type, the main should be the first of the sequence 
+	
 		// Text formats
 		'html' 			=> array('mime' => 'text/html'),
 		'xhtml' 		=> array('mime' => 'application/xhtml+xml'),
@@ -80,12 +84,16 @@ Class Response extends Core
 		'xml' 			=> array('mime' => 'application/xml'),
 		'plist' 		=> array('mime' => 'application/plist+xml'),
 		'yaml' 			=> array('mime' => 'text/yaml'),
+		'txt' 			=> array('mime' => 'text/plain'),
 		'dataurl' 		=> array('mime' => 'text/plain'),
 		'datauri' 		=> array('mime' => 'text/plain'),
 		'csv' 			=> array('mime' => 'text/csv'),
-		'txt' 			=> array('mime' => 'text/plain'),
+		
 		
 		// Image formats
+		'jpg' 			=> array('mime' => 'image/jep'),
+		'gif' 			=> array('mime' => 'image/gif'),
+		'png' 			=> array('mime' => 'image/png'),
 		'qr' 			=> array('mime' => 'image/png'),
 		
 		// Binary formats
@@ -191,7 +199,8 @@ Class Response extends Core
 	{
 //var_dump(__METHOD__);
 				
-		$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['html']['mime'] . '; charset=utf-8;');
 		
 		$this->useTemplate = isset($this->useTemplate) 
 			? $this->useTemplate 
@@ -216,7 +225,8 @@ Class Response extends Core
 	}
 	public function renderXhtml()
 	{
-		$this->setHeader('Content-Type', $this->knownFormats['xhtml']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['xhtml']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['xhtml']['mime'] . '; charset=utf-8;');
 		$this->renderHtml();
 		$this->currentFormat = 'html';
 	}
@@ -224,14 +234,16 @@ Class Response extends Core
 	
 	public function renderJson()
 	{		
-		$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['json']['mime'] . '; charset=utf-8;');
 		$this->body = json_encode(isset($this->body) ? $this->body : $this->data);
 		$this->currentFormat = 'json';
 	}
 	
 	public function renderJsonp()
 	{
-		$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['json']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['json']['mime'] . '; charset=utf-8;');
 		
 		$callback = !empty($_GET['callback']) ? filter_var($_GET['callback'], FILTER_SANITIZE_STRING) : null;
 		$callback = !empty($callback) ? $callback : 'callback';
@@ -243,7 +255,8 @@ Class Response extends Core
 
 	public function renderJsonreport()
 	{
-		$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['html']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['html']['mime'] . '; charset=utf-8;');
 		
 		$this->renderJson();
 		$this->body = '<div id="json" class="jsonreport">' . $this->body . '</div>';
@@ -255,7 +268,8 @@ Class Response extends Core
 	public function renderDatauri(){ return $this->renderdatauri(); }
 	public function renderDataurl()
 	{
-		$this->setHeader('Content-Type', $this->knownFormats['dataurl']['mime']);
+		//$this->setHeader('Content-Type', $this->knownFormats['dataurl']['mime']);
+		$this->setHeader('Content-Type', self::$knownFormats['dataurl']['mime']);
 
 		$data = isset($this->body) ? $this->body : $this->data;
 		
@@ -284,7 +298,8 @@ Class Response extends Core
 		else
 		{
 			// Get current mime
-			$mime = $this->knownFormats[$this->currentFormat]['mime'];
+			//$mime = $this->knownFormats[$this->currentFormat]['mime'];
+			$mime = self::$knownFormats[$this->currentFormat]['mime'];
 			$this->body = 'data:' . $mime . ';base64,' . base64_encode($data);
 		}
 		
@@ -292,7 +307,8 @@ Class Response extends Core
 	}
 	public function renderTxt()
 	{
-		$this->setHeader('Content-Type', $this->knownFormats['txt']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['txt']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['txt']['mime'] . '; charset=utf-8;');
 		$this->body = isset($this->body) ? $this->body : $this->data;
 		$this->currentFormat = 'txt';
 	}
@@ -300,7 +316,8 @@ Class Response extends Core
 	public function renderBin()
 	{
 		$this->setheaders(array(
-			'Content-Type' 				=> $this->knownFormats['bin']['mime'],
+			//'Content-Type' 				=> $this->knownFormats['bin']['mime'],
+			'Content-Type' 				=> self::$knownFormats['bin']['mime'],
 			'Content-Transfer-Encoding' => 'Binary',
 		));
 		
@@ -321,7 +338,8 @@ Class Response extends Core
 	public function renderDownload()
 	{
 		$this->setheaders(array(
-			'Content-Type' 				=> $this->knownFormats['download']['mime'],
+			//'Content-Type' 				=> $this->knownFormats['download']['mime'],
+			'Content-Type' 				=> self::$knownFormats['download']['mime'],
 			'Content-Transfer-Encoding' => 'Binary',
 		));
 		$this->setFileBaseName();
@@ -475,14 +493,16 @@ Class Response extends Core
 			}
 		}
 		
-		$this->setHeader('Content-Type', $this->knownFormats['csv']['mime'] . '; charset=utf-8;');
+		//$this->setHeader('Content-Type', $this->knownFormats['csv']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['csv']['mime'] . '; charset=utf-8;');
 		$this->body = $output;
 		$this->currentFormat = 'csv';
 	}
 
 	public function renderPhp()
 	{		
-		$this->setHeader('Content-Type', $this->knownFormats['php']['mime']);
+		//$this->setHeader('Content-Type', $this->knownFormats['php']['mime']);
+		$this->setHeader('Content-Type', self::$knownFormats['php']['mime']);
 		$this->body = serialize(isset($this->body) ? $this->body : $this->data);
 		$this->currentFormat = 'txt';
 	}
@@ -517,7 +537,9 @@ Class Response extends Core
 		$zip->close();
 		
 		$this->setHeaders(array(
-			'Content-Type' 		=> $this->knownFormats['zip']['mime'],
+			//'Content-Type' 		=> $this->knownFormats['zip']['mime'],
+			'Content-Type' 		=> self::$knownFormats['zip']['mime'],
+			
 			'Content-Length' 	=> filesize($zipFile),
 		));		
 		$this->setFileBaseName();
@@ -580,7 +602,6 @@ Class Response extends Core
 		//require (SMARTY_DIR . 'Smarty.class.php');
 		require (_PATH_LIBS . 'PHPGasus/templating/Smarty/Smarty.class.php');
 		
-		
 		// Instanciate a Smarty object and configure it
 		$this->templateEngine 						= new Smarty();
 		$this->templateEngine->compile_check 		= _TEMPLATES_COMPILE_CHECK;
@@ -591,9 +612,6 @@ Class Response extends Core
 		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
 		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';
 		$this->templateEngine->error_reporting 		= E_ALL & ~E_NOTICE;
-		
-//var_dump($this->request);
-//var_dump(end($_req->breadcrumbs));
 
 		$_req = $this->request;
 		
@@ -621,6 +639,7 @@ Class Response extends Core
 		$this->templateEngine->assign($this->templateData);
 		
 //var_dump($this->template);
+//die();
 		
 		try
 		{
