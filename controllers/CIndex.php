@@ -22,7 +22,6 @@ Class CIndex extends Controller
  
 	public function down()				{ $this->render(); }
 	public function maintenance()		{ $this->render(); }
-	public function down()				{ $this->render(); }
 	public function notfound()			{ $this->render(); }
 
 }
