@@ -1,5 +1,4 @@
-<aside class="aside" id="aside">
-	
+<aside class="aside" id="aside" role="complementary">
 	<header class="header asideHeader">{block name='asideHeader'}{/block}</header>
 	<div class="asideContent" id="asideContent">
 		{block name='asideContent'}

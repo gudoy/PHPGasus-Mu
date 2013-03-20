@@ -77,96 +77,22 @@ Class Request extends Core
 
 	public function getFilters()
 	{
-		//$this->filters = array();
+		
+//var_dump($_SERVER);
 		
 		// TODO: bench preg_split + replaced request uri, preg_split + redirect_url, explode + skiping '/' in dispatch
-		//$parts 		= preg_split('/\//', trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $_SERVER['REQUEST_URI']), '/'));
-		$cleaned 	= trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $this->relativeURI), '/');
+		//$cleaned 	= trim(str_replace('?' . $_SERVER['QUERY_STRING'], '', $this->relativeURI), '/');
+		//$cleaned = trim($_SERVER['PATH_INFO'], '/'); // PATH_INFO is an Apache env and thus not always present
+		//$cleaned = trim(str_replace($_SERVER['QUERY_STRING'], '', $_SERVER['REQUEST_URI']), '?'); // does not handle redirection to /index/foo/path (as for foo.example.com/)
+//var_dump($_SERVER['QUERY_STRING']);
+//var_dump($_SERVER['PHP_SELF']);
+		$cleaned = trim(str_replace(array('index.php', $_SERVER['QUERY_STRING'], '//'), array('', '', '/'), $_SERVER['PHP_SELF']), '/');
+//var_dump($cleaned);
 		$this->filters = !empty($cleaned) ? preg_split('/\//', $cleaned) : array();
-
 //var_dump($this->filters);
-	}
-	
-	public function getController0()
-	{
-		$this->controllerName 			= 'CIndex';
-		$this->controllerRelPath 		= '';
-		$this->breadcrumbs 				= array();
-		//$this->controllerNamespacedName = $this->controllerName;
-		
-		// If the site is in maintenance
-		if ( _IN_MAINTENANCE ) {  return; }
 
-		// Special case for Home (propably the most visited page)
-		// We can optmitize by directly calling the controller
-		elseif ( str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REDIRECT_URL']) === '/' ) { return; }
-
-		// Otherwise,
-		// Loop over the request parts
-		$i = -1;
-		foreach ((array) $this->filters as $item)
-		{
-			$i++;	
-			$item 		= strtolower($item); 													// Lowercase the item
-			$hasNext 	= isset($this->filters[$i+1]); 											// Check if there's a next part to check against
-			$cName 		= 'C' . ucfirst($item); 												// Controller name
-			$cPath 		= _PATH_CONTROLLERS . 
-				( $this->breadcrumbs ? join('/', $this->breadcrumbs) . '/' : '' ); 					// Current path to controller
-			$cFilepath 	= $cPath . $cName . '.php'; 											// Controller file path	
-
-var_dump($item);
-//var_dump($cPath);
-//var_dump($cFilepath);
-//var_dump('hasNext:' . (int) $hasNext);
-//var_dump($cFilepath);
-//var_dump('is file:' . (int)is_file($cFilepath));
-//var_dump('is dir:' . (int)is_dir($cPath . $item));
-
-//var_dump($this->filters);					
-			
-			// Is an existing folder in controllers?
-			// TODO: require the controller to exists??? For
-			if ( ( $isDir = is_dir($cPath . $item) ) && $isDir )
-			{
-var_dump('isfolder:' . $isDir);
-//var_dump('hasNext:' . $hasNext);
-//var_dump($cPath);
-//var_dump($cPath . $item . '/' . $cName . '.php');
-
-				if ( ( $isFileinFolder = file_exists($cPath . $item . '/' . $cName . '.php') ) && $isFileinFolder )
-				{
-var_dump('is file in folder:' . $isFileinFolder);
-					$this->controllerName = $cName;
-					$this->controllerRelPath .= $item . '/';
-
-					 array_shift($this->filters);
-				}
-				
-				if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
-		
-				// Is there a next item?
-				//if 		( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
-				if 		( $hasNext ){ $this->breadcrumbs[] = $item; continue; }
-				
-				// Otherwise, does the controller in the same folder or the current directory
-				//if 	( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; }
-			}
-			// Is an existing controller?
-			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; array_shift($this->filters); }
-			
-			//$this->filters = $hasNext ? array_slice($this->filters, $i+1) : array();
-		
-
-		}
-
-//var_dump($this);
-//var_dump($this->filters);
 //die();
-			require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
-			
-			return;
-
-	}
+	}
 
 	public function getController()
 	{
@@ -183,7 +109,10 @@ var_dump('is file in folder:' . $isFileinFolder);
 
 		// Special case for Home (propably the most visited page)
 		// We can optmitize by directly calling the controller
-		elseif ( str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REDIRECT_URL']) === '/' ) { return; }
+		//elseif ( str_replace(rtrim(_PATH_REL, '/'), '', $_SERVER['REDIRECT_URL']) === '/' ) { return; }
+		//elseif ( str_replace($_SERVER['QUERY_STRING'], '', $_SERVER['PATH_INFO']) === '/' ) { return; } // PATH_INFO is an Apache env and thus not always present
+		//elseif ( trim(str_replace($_SERVER['QUERY_STRING'], '', $_SERVER['REQUEST_URI']), '?') === '/' ) { return; }
+		elseif ( empty($this->filters) ) { return; }
 
 		// Otherwise,
 		// Loop over the request parts
@@ -325,9 +254,9 @@ var_dump('is file in folder:' . $isFileinFolder);
 			}
 			
 			// Fix this fucking webkit that prefer xml over html
-			//if ( $this->browser['engine'] === 'webkit' )
 			$ua = !empty($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null;
-			if ( strpos($ua, 'webkit/') !== false )
+			
+			if ( stripos($ua, 'webkit/') !== false )
 			{				
 				if ( isset($prefs['application/xml']) && isset($prefs['application/xhtml+xml']) && isset($prefs['text/html']) )
 				{		
@@ -336,6 +265,13 @@ var_dump('is file in folder:' . $isFileinFolder);
 					
 					if ( isset($prefs['image/png']) ){ $prefs['image/png'] = $prefs['application/xml']-(5); }
 				}
+			}
+			
+			// Fix this damn big fucking shit of ie that even does not insert text/html as a prefered type 
+			// and prefers being served in their own proprietary formats (word,silverlight,...). MS screw you!!!!  
+			if ( ($start = stripos($ua, 'MSIE')) && $start !== false && ($v = substr($ua, $start + 5, 1)) && $v <= 9 )
+			{				
+				if ( !isset($prefs['text/html']) ) { $prefs['text/html'] = 150; }
 			}
 			
 			// Sort by type priority

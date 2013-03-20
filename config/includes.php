@@ -1,7 +1,7 @@
 <?php
 
-include( __DIR__ . '/env.php' );
-include( __DIR__ . '/paths.php' );
-include( __DIR__ . '/features.php' );
+include( dirname(__FILE__) . '/env.php' );
+include( dirname(__FILE__) . '/paths.php' );
+include( dirname(__FILE__) . '/features.php' );
 
 ?>

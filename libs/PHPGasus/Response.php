@@ -91,7 +91,7 @@ Class Response extends Core
 		
 		
 		// Image formats
-		'jpg' 			=> array('mime' => 'image/jep'),
+		'jpg' 			=> array('mime' => 'image/jpeg'),
 		'gif' 			=> array('mime' => 'image/gif'),
 		'png' 			=> array('mime' => 'image/png'),
 		'qr' 			=> array('mime' => 'image/png'),
@@ -127,6 +127,8 @@ Class Response extends Core
 		
 		//$this->request = &$Request;
 		$this->currentFormat = null;
+		
+		$this->view = new ArrayObject(array(), 2);
 	}
 	
 	public function init()
@@ -184,8 +186,8 @@ Class Response extends Core
 	}
 	
 	public function writeHeaders()
-	{		
-		foreach ($this->headers as $k => $v){ header($k . ': ' . $v); }
+	{
+		foreach ((array) $this->headers as $k => $v){ header($k . ': ' . $v); }
 		
 		return $this;
 	}
@@ -223,12 +225,24 @@ Class Response extends Core
 		
 		$this->currentFormat = 'html';
 	}
+
+
 	public function renderXhtml()
 	{
 		//$this->setHeader('Content-Type', $this->knownFormats['xhtml']['mime'] . '; charset=utf-8;');
 		$this->setHeader('Content-Type', self::$knownFormats['xhtml']['mime'] . '; charset=utf-8;');
 		$this->renderHtml();
 		$this->currentFormat = 'html';
+	}
+
+	public function minifyHtml($output)
+	{
+		require _PATH_LIBS . 'PHPGasus/outputs/Minify/lib/Minify/HTML.php';
+		require _PATH_LIBS . 'PHPGasus/outputs/Minify/lib/Minify/CSS.php';
+		require _PATH_LIBS . 'PHPGasus/outputs/Minify/lib/JSMin.php';
+
+    	return Minify_HTML::minify($output, array(
+    	));
 	}
 	
 	
@@ -347,7 +361,16 @@ Class Response extends Core
 		$this->body = isset($this->body) ? $this->body : $this->data;
 	}
 	
-	public function renderXml(){}
+	public function renderXml()
+	{
+		//$this->setHeader('Content-Type', $this->knownFormats['txt']['mime'] . '; charset=utf-8;');
+		$this->setHeader('Content-Type', self::$knownFormats['xml']['mime'] . '; charset=utf-8;');
+		
+		// TODO
+		
+		$this->currentFormat = 'xml';
+	}
+	
 	public function renderCsv()
 	{
 //var_dump(__METHOD__);
@@ -371,8 +394,6 @@ Class Response extends Core
 		//$buffer = fopen('php://temp', 'r+');
 		// Get current data
 		$data = isset($this->body) ? $this->body : $this->data;
-		
-//var_dump($data);
 		
 		// Special case for scalar data
 		if ( is_scalar($data) )
@@ -398,10 +419,9 @@ Class Response extends Core
 				{
 					$isNumIndex 	= is_numeric($k);
 					$isResource 	= DataModel::isResource($k);
-					$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'single'; // 'single' or 'multiple' resources	
+					//$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'single'; // 'single' or 'multiple' resources		
+					$pattern 		= !$isNumIndex && is_array($data[$k]) ? 'multiple' : 'single'; // 'single' or 'multiple' resources
 				}
-				
-//var_dump($pattern);
 				
 				// Handle case where the current looped item is a collection
 				if ( $pattern === 'multiple' )
@@ -425,7 +445,7 @@ Class Response extends Core
 							if ( $itemsCount === 0 && $o['addComments'] && $o['addColumnNames'] )
 							{
 								// Add a 1st line with column names
-								$output .= $o['comment'] . join($o['separator'], array_keys($item)) . $o['eol'];
+								$output .= $o['comment'] . join($o['separator'], array_keys((array) $item)) . $o['eol'];
 							}
 							
 							// TODO: loop over column values to be able to fix types?????
@@ -454,12 +474,8 @@ Class Response extends Core
 					// Get current collection
 					$item = $data[$k];
 					
-//var_dump($item);
-					
 					if ( is_scalar($item) )
 					{
-//var_dump($item);
-//var_dump((string) $item);
 						$output .= $o['fixbool'] && is_bool($item) 
 							? ($item == true ? 'true' : 'false') 
 							: (is_bool($item) ? (string) (int) $item : $item);
@@ -557,7 +573,9 @@ Class Response extends Core
 	}
 
 	public function renderTemplate()
-	{		
+	{
+		$v = &$this->view;
+		
 		$this->view = new ArrayObject(array_merge(array(
 			// Caching
 			'cache' 					=> _TEMPLATES_CACHING,
@@ -565,7 +583,9 @@ Class Response extends Core
 			'cacheLifetime' 			=> null,
 			
 			// Metas
-			'title' 					=> null,
+			'title' 					=> isset($v['title']) 
+				? $v['title'] 
+				: ( isset($v['name']) ? ucfirst($v['name']) . ' - ' : '') . ( defined('_APP_TITLE') ? _APP_TITLE : _APP_NAME ),
 			'metas' 			 		=> array(),
 			//'description' 				=> _APP_META_KEYWORDS,
 			//'keywords' 					=> _APP_META_KEYWORDS,
@@ -643,16 +663,63 @@ Class Response extends Core
 		
 		try
 		{
-			$this->templateEngine->display($this->template, $this->view->cacheId);
+			$minify = defined('_MINIFY_HTML') && _MINIFY_HTML;
+			
+			if ( ($minify && (_MINIFY_HTML_VIA == '' || _MINIFY_HTML_VIA === 'Apache-mod_pagespeeed')) 
+				|| !$minify )
+			{
+				$this->templateEngine->display($this->template, $this->view->cacheId);	
+			}
+			elseif ( _MINIFY_HTML_VIA === 'Smarty-trimwhitespacefilter' )
+			{
+				$this->templateEngine->loadFilter('output', 'trimwhitespace');
+				$this->templateEngine->display($this->template, $this->view->cacheId);
+			}
+			elseif ( _MINIFY_HTML_VIA === 'php-simple' )
+			{
+				// TODO
+				
+				$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
+			    $search 	= array(
+					'/\>[^\S ]+/s', //strip whitespaces after tags, except space
+					'/[^\S ]+\</s', //strip whitespaces before tags, except space
+					'/(\s)+/s'  // shorten multiple whitespace sequences
+				);
+			    $replace 	= array('>', '<','\\1');
+				$output 	= preg_replace($search, $replace, $buffer);
+				
+				echo $output;
+			}
+			elseif ( _MINIFY_HTML_VIA === 'PHP-tidy' )
+			{
+				// TODO
+				
+				$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
+				$options 	= array(
+					'clean' 			=> true,
+					'hide-comments' 	=> true,
+					'indent' 			=> false,
+					'indent-attributes' => false,
+					'merge-divs' 		=> false,
+					'merge-spans' 		=> false,
+					);
+				$Tidy = new tidy();
+				$Tidy->parseString($output, $options, 'utf8');
+				//$Tidy->cleanRepair();
+				
+				echo $Tidy;
+			}
+			elseif ( _MINIFY_HTML_VIA === 'Minify' )
+			{
+				$output = $this->templateEngine->fetch($this->template, $this->view->cacheId);
+				$output = $this->minifyHtml($output);
+				
+				echo $output;
+			}
 		}
 		catch(Exception $e)
 		{
-//var_dump($e->getMessage());
-//var_dump($e);
-
-
 			echo $e->getMessage() . "<br/>";
-			//$this->errors[] = array('msg' => $e->getMessage());
 			
 			$defaultTpl = 'pages/default.html.tpl';
 			
@@ -661,10 +728,7 @@ Class Response extends Core
 				// TODO: in PROD env, use 404 template, and in others env use default template?????
 				$this->templateEngine->display($defaultTpl, $this->view->cacheId);	
 			}
-
 		}
-		
-		
 	}
 	
 	public function render()

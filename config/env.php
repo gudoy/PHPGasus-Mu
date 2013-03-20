@@ -13,9 +13,6 @@ define("_SUBDOMAIN", 					_HOST_IS_IP ? '' : str_replace('.' . _DOMAIN, '', $_SE
 # Get the projet full path on the server
 define("_PATH",							realpath((dirname(realpath(__FILE__))) . '/../') . '/'); // 
 
-# Get app name using base project folder name
-define("_APP_NAME", 					basename(_PATH));
-
 # Get path relatively to server root
 define("_PATH_REL", 					str_replace($_SERVER['DOCUMENT_ROOT'], '', _PATH));
 
@@ -31,5 +28,19 @@ define("_URL_STATIC_1", 				_APP_PROTOCOL . 'static1.' . _DOMAIN . '/');
 define("_URL_STATIC_2", 				_APP_PROTOCOL . 'static2.' . _DOMAIN . '/');
 define("_URL_STATIC_3", 				_APP_PROTOCOL . 'static3.' . _DOMAIN . '/');
 define("_URL_STATIC_4", 				_APP_PROTOCOL . 'static4.' . _DOMAIN . '/');
+
+
+// Specific
+define("_APP_NAME", 					basename(_PATH)); 		// Get app name using base project folder name
+define("_APP_DISPLAY_NAME", 			'');
+define("_APP_TITLE", 					'');
+define("_APP_DESCRIPTION", 				'');
+define("_APP_KEYWORDS", 				'');
+define("_APP_AUTHOR", 					'');
+
+define("_APP_TILE_COLOR", 				'#000000');
+
+define("_GOOGLE_ANALYTICS_UA", 			'');
+define("_GOOGLE_ANALYTICS_DOMAIN", 		_DOMAIN);
 
 ?>
