@@ -14,7 +14,7 @@
 		'url' 		=> '#'
 	]
 ]}
-<nav class="main mainNav" id="mainNav" role="navigation">
+<nav id="mainNav" class="main mainNav" role="navigation">
 	{$level = 0}
 	<ul class="itemsLv{$level+1}">
 		{foreach $menuItems as $key => $item}

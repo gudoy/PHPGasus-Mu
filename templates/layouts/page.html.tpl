@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="no-js {$view.name}Page loading" id="{$view.id|default:$view.name}Page" role="application">
+<html id="{$view.id|default:$view.name}Page" class="no-js {$view.name}Page loading" role="application">
 <head>
 <meta charset="utf-8" />
 {if $view.title}<title>{$view.title|default:$smarty.const._APP_NAME}</title>{/if}
@@ -16,7 +16,7 @@
 </head>
 <body>
 {block name='page'}
-	<div class="layout page {$view.name} current" id="{$view.name}" role="window">
+	<div id="{$view.name}" class="layout page {$view.id} current" role="window">
 		{block name='header'}{include file='blocks/header/header.html.tpl'}{/block}
 		{block name='body'}{include file='blocks/body/body.html.tpl'}{/block}
 		{block name='footer'}{include file='blocks/footer/footer.html.tpl'}{/block}

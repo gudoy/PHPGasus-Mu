@@ -15,13 +15,14 @@ Class CIndex extends Controller
 		//$this->response->template = _PATH . 'templates/' . __FUNCTION__ . '.html';
 		
 		// Set an explicit view name
-		//$this->response->view->name = 'home';
+		$this->response->view->name = 'home';
 		
 		$this->render();
 	}
  
 	public function down()				{ $this->render(); }
 	public function maintenance()		{ $this->render(); }
+	public function down()				{ $this->render(); }
 	public function notfound()			{ $this->render(); }
 
 }

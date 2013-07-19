@@ -1,7 +1,5 @@
 <?php
 
-//namespace PHPGasus;
-
 Class Response extends Core
 {
 	public $httpVersion = '1.1';
@@ -234,6 +232,61 @@ Class Response extends Core
 		$this->renderHtml();
 		$this->currentFormat = 'html';
 	}
+	
+	public function minify()
+	{
+		// No minification or minification via an Apache module 
+		if ( _MINIFY_HTML_VIA === 'Apache-mod_pagespeeed' )
+		{
+			$this->templateEngine->display($this->template, $this->view->cacheId);
+		}
+		// No minification or minification via an Apache module
+		elseif ( _MINIFY_HTML_VIA === 'Smarty-trimwhitespacefilter' )
+		{
+			$this->templateEngine->loadFilter('output', 'trimwhitespace');
+			$this->templateEngine->display($this->template, $this->view->cacheId);
+		}
+		elseif ( _MINIFY_HTML_VIA === 'php-simple' )
+		{
+			// TODO
+			$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
+		    $search 	= array(
+				'/\>[^\S ]+/s', //strip whitespaces after tags, except space
+				'/[^\S ]+\</s', //strip whitespaces before tags, except space
+				'/(\s)+/s'  // shorten multiple whitespace sequences
+			);
+		    $replace 	= array('>', '<','\\1');
+			$output 	= preg_replace($search, $replace, $buffer);
+			
+			echo $output;
+		}
+		elseif ( _MINIFY_HTML_VIA === 'PHP-tidy' )
+		{
+			// TODO
+			
+			$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
+			$options 	= array(
+				'clean' 			=> true,
+				'hide-comments' 	=> true,
+				'indent' 			=> false,
+				'indent-attributes' => false,
+				'merge-divs' 		=> false,
+				'merge-spans' 		=> false,
+				);
+			$Tidy = new tidy();
+			$Tidy->parseString($output, $options, 'utf8');
+			//$Tidy->cleanRepair();
+			
+			echo $Tidy;
+		}
+		elseif ( _MINIFY_HTML_VIA === 'Minify' )
+		{
+			$output = $this->templateEngine->fetch($this->template, $this->view->cacheId);
+			$output = $this->minifyHtml($output);
+			
+			echo $output;
+		}
+	}
 
 	public function minifyHtml($output)
 	{
@@ -418,7 +471,8 @@ Class Response extends Core
 				if ( !$pattern )
 				{
 					$isNumIndex 	= is_numeric($k);
-					$isResource 	= DataModel::isResource($k);
+					//$isResource 	= DataModel::isResource($k);
+					$isResource 	= !$isNumIndex ? DataModel::isResource($k) : false;
 					//$pattern 		= !$isNumIndex && $isResource ? 'multiple' : 'single'; // 'single' or 'multiple' resources		
 					$pattern 		= !$isNumIndex && is_array($data[$k]) ? 'multiple' : 'single'; // 'single' or 'multiple' resources
 				}
@@ -576,6 +630,8 @@ Class Response extends Core
 	{
 		$v = &$this->view;
 		
+		function uclowerCallback($matches){ return strtolower($matches[0]); }
+		
 		$this->view = new ArrayObject(array_merge(array(
 			// Caching
 			'cache' 					=> _TEMPLATES_CACHING,
@@ -583,6 +639,7 @@ Class Response extends Core
 			'cacheLifetime' 			=> null,
 			
 			// Metas
+			'name' 						=> $this->request->methodName,
 			'title' 					=> isset($v['title']) 
 				? $v['title'] 
 				: ( isset($v['name']) ? ucfirst($v['name']) . ' - ' : '') . ( defined('_APP_TITLE') ? _APP_TITLE : _APP_NAME ),
@@ -614,24 +671,8 @@ Class Response extends Core
 			'minifyJS' 					=> isset($_GET['minify']) ? in_array($_GET['minify'], array('js','all')) : $this->view->minifyJS,
 			'minifyHTML' 				=> isset($_GET['minify']) ? in_array($_GET['minify'], array('html','all')) : $this->view->minifyHTML,
 			 */
+			'id' 						=> isset($v->id) ? $v->id : preg_replace_callback('/^([A-Z]{1})/', "uclowerCallback", str_replace(' ', '', ucfirst($v->name))),
 		)), 2);
-		
-		//define('SMARTY_DIR', _PATH_LIBS . 'PHPGasus/templating/Smarty/');
-		//define('SMARTY_PLUGINS_DIR', SMARTY_DIR . 'plugins/');
-		//define('SMARTY_SYSPLUGINS_DIR', SMARTY_DIR . 'sysplugins/');
-		//require (SMARTY_DIR . 'Smarty.class.php');
-		require (_PATH_LIBS . 'PHPGasus/templating/Smarty/Smarty.class.php');
-		
-		// Instanciate a Smarty object and configure it
-		$this->templateEngine 						= new Smarty();
-		$this->templateEngine->compile_check 		= _TEMPLATES_COMPILE_CHECK;
-		$this->templateEngine->force_compile 		= _TEMPLATES_FORCE_COMPILE;
-		$this->templateEngine->caching 				= isset($this->view['cache']) 			? $this->view['cache'] : _TEMPLATES_CACHING;
-		$this->templateEngine->cache_lifetime 		= isset($this->view['cacheLifetime']) 	? $this->view['cacheLifetime'] : _TEMPLATES_CACHE_LIFETIME;
-		$this->templateEngine->template_dir 		= _PATH . 'templates/';
-		$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
-		$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';
-		$this->templateEngine->error_reporting 		= E_ALL & ~E_NOTICE;
 
 		$_req = $this->request;
 		
@@ -656,66 +697,57 @@ Class Response extends Core
 		
 		unset($_req);
 		
-		$this->templateEngine->assign($this->templateData);
+		// TODO: Instead of the following, use a templateEngine class
+		// $this->templateEngine = new templateEngine('smarty');
+		// $this->templateEngine->conf(
+			//'caching' 			=> isset($this->view['cache']) 			? $this->view['cache'] : _TEMPLATES_CACHING;
+			// 'cache_lifetime' 	=> isset($this->view['cacheLifetime']) 	? $this->view['cacheLifetime'] : _TEMPLATES_CACHE_LIFETIME
+		// )
 		
-//var_dump($this->template);
-//die();
+		// Init templace engine
+		if ( _TEMPLATES_ENGINE === 'smarty' )
+		{
+			require (_PATH_LIBS . 'PHPGasus/templating/Smarty/Smarty.class.php');
+			
+			// Instanciate a Smarty object and configure it
+			$this->templateEngine 						= new Smarty();
+			$this->templateEngine->compile_check 		= _TEMPLATES_COMPILE_CHECK;
+			$this->templateEngine->force_compile 		= _TEMPLATES_FORCE_COMPILE;
+			$this->templateEngine->caching 				= isset($this->view['cache']) 			? $this->view['cache'] : _TEMPLATES_CACHING;
+			$this->templateEngine->cache_lifetime 		= isset($this->view['cacheLifetime']) 	? $this->view['cacheLifetime'] : _TEMPLATES_CACHE_LIFETIME;
+			$this->templateEngine->template_dir 		= _PATH . 'templates/';
+			$this->templateEngine->compile_dir 			= _PATH . 'templates/_precompiled/';
+			$this->templateEngine->cache_dir 			= _PATH . 'templates/_cache/';
+			$this->templateEngine->error_reporting 		= E_ALL & ~E_NOTICE;
+			
+			// 
+			$this->templateEngine->assign($this->templateData);
+		}
+		// Otherwise, do not use template engine
+		else
+		{
+			//require(_PATH . 'templates/' . $this->template);
+			$output = file_get_contents(_PATH . 'templates/' . $this->template);
+			echo $output;
+		}
 		
 		try
 		{
 			$minify = defined('_MINIFY_HTML') && _MINIFY_HTML;
 			
-			if ( ($minify && (_MINIFY_HTML_VIA == '' || _MINIFY_HTML_VIA === 'Apache-mod_pagespeeed')) 
-				|| !$minify )
+			// No minification
+			if ( !$minify || ($minify && _MINIFY_HTML_VIA == '') )
 			{
-				$this->templateEngine->display($this->template, $this->view->cacheId);	
-			}
-			elseif ( _MINIFY_HTML_VIA === 'Smarty-trimwhitespacefilter' )
-			{
-				$this->templateEngine->loadFilter('output', 'trimwhitespace');
+				// Just display the template
 				$this->templateEngine->display($this->template, $this->view->cacheId);
 			}
-			elseif ( _MINIFY_HTML_VIA === 'php-simple' )
+			// Otherwise
+			else
 			{
-				// TODO
-				
-				$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
-			    $search 	= array(
-					'/\>[^\S ]+/s', //strip whitespaces after tags, except space
-					'/[^\S ]+\</s', //strip whitespaces before tags, except space
-					'/(\s)+/s'  // shorten multiple whitespace sequences
-				);
-			    $replace 	= array('>', '<','\\1');
-				$output 	= preg_replace($search, $replace, $buffer);
-				
-				echo $output;
+				// Handle minificifaction (different possible cases but basically, will fetch the template output, minify it and then display)
+				$this->minify();
 			}
-			elseif ( _MINIFY_HTML_VIA === 'PHP-tidy' )
-			{
-				// TODO
-				
-				$output 	= $this->templateEngine->fetch($this->template, $this->view->cacheId);
-				$options 	= array(
-					'clean' 			=> true,
-					'hide-comments' 	=> true,
-					'indent' 			=> false,
-					'indent-attributes' => false,
-					'merge-divs' 		=> false,
-					'merge-spans' 		=> false,
-					);
-				$Tidy = new tidy();
-				$Tidy->parseString($output, $options, 'utf8');
-				//$Tidy->cleanRepair();
-				
-				echo $Tidy;
-			}
-			elseif ( _MINIFY_HTML_VIA === 'Minify' )
-			{
-				$output = $this->templateEngine->fetch($this->template, $this->view->cacheId);
-				$output = $this->minifyHtml($output);
-				
-				echo $output;
-			}
+			
 		}
 		catch(Exception $e)
 		{
@@ -735,8 +767,6 @@ Class Response extends Core
 	{
 		// Send headers
 		$this->writeHeaders();
-		
-//var_dump($this->currentFormat);
 		
 		// Special when using templating
 		if ( $this->currentFormat === 'html' && ( !isset($this->useTemplate) || $this->useTemplate ) )

@@ -19,6 +19,10 @@ define("_PATH_REL", 					str_replace($_SERVER['DOCUMENT_ROOT'], '', _PATH));
 # Get used scheme (http or https)
 define("_APP_PROTOCOL", 				'http' . ( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '' ) . '://');
 
+# Set protocol relative url 
+define("_PROTOCOL_REL_URL", 			'//' . $_SERVER['HTTP_HOST'] . '/');
+
+
 // If a server name has been defined, use it
 // Otherwise, use the server ip and the project base folder path as the base URL
 define("_URL", 							_APP_PROTOCOL . $_SERVER['HTTP_HOST'] . rtrim(_PATH_REL, '/') . '/');
@@ -32,8 +36,8 @@ define("_URL_STATIC_4", 				_APP_PROTOCOL . 'static4.' . _DOMAIN . '/');
 
 // Specific
 define("_APP_NAME", 					basename(_PATH)); 		// Get app name using base project folder name
-define("_APP_DISPLAY_NAME", 			'');
-define("_APP_TITLE", 					'');
+define("_APP_DISPLAY_NAME", 			_APP_NAME);
+define("_APP_TITLE", 					_APP_DISPLAY_NAME);
 define("_APP_DESCRIPTION", 				'');
 define("_APP_KEYWORDS", 				'');
 define("_APP_AUTHOR", 					'');

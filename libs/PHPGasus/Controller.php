@@ -1,7 +1,5 @@
 <?php
 
-//namespace PHPGasus;
-
 Class Controller extends Core
 {
 	public $data = null;

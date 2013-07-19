@@ -25,7 +25,6 @@ Class Application extends Core
 				//php_error\reportErrors(array('catch_ajax_errors' => false));
 			}
 			
-			
 			ini_set('xdebug.var_display_max_depth', 6);
 			ini_set('xdebug.var_display_max_data', 99999);
 			ini_set('xdebug.var_display_max_children', 999);
