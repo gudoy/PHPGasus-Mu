@@ -136,6 +136,7 @@ Class Request extends Core
 
 //var_dump($this->filters);					
 //var_dump($cPath . $item);
+//die;
 			
 			// Is an existing folder in controllers?
 			// TODO: require the controller to exists??? For
@@ -160,7 +161,7 @@ Class Request extends Core
 
 				// If has next
 				if 		( $hasNext )		{ continue; }
-				elseif 	( $isFileinFolder )	{ array_shift($this->filters);  }
+				//elseif 	( $isFileinFolder )	{ array_shift($this->filters);  }
 			}
 			// Is an existing controller?
 			elseif ( ( $isFile = is_file($cFilepath) ) && $isFile ){ $this->controllerName = $cName; array_shift($this->filters); break; }
@@ -168,7 +169,8 @@ Class Request extends Core
 
 		$this->controllerRelPath = (!empty($this->breadcrumbs) ? join('/', $this->breadcrumbs) . '/' : '');
 
-//var_dump($this);
+//var_dump($this);
+//die;
 //var_dump($this->filters);
 //die();
 		require(_PATH_CONTROLLERS . $this->controllerRelPath . $this->controllerName . '.php');
@@ -212,6 +214,7 @@ Class Request extends Core
 		$this->methodName = $method;
 
 //var_dump($this);
+//die;
 	}
 
 	public function getExtension()

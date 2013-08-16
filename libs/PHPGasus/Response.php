@@ -190,6 +190,13 @@ Class Response extends Core
 		return $this;
 	}
 	
+	
+	public function redirect($url, $options = null)
+	{
+        header("Location:" . $url);
+		die;
+	}
+	
 	public function renderDefault()
 	{
 		$this->{'render' . _DEFAULT_OUTPUT_FORMAT}();
